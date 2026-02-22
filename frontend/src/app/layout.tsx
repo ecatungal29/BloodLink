@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Inter } from "next/font/google"
-import { motion, AnimatePresence } from "framer-motion"
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Inter } from "next/font/google";
+import { motion, AnimatePresence } from "framer-motion";
 import {
 	Droplet,
 	Home,
@@ -14,32 +14,35 @@ import {
 	LogOut,
 	User,
 	Settings,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import "./globals.css"
+	Bell,
+	ChevronRight,
+	Building,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
 	children,
 }: {
-	children: React.ReactNode
+	children: React.ReactNode;
 }) {
-	const [user, setUser] = useState<any>(null)
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-	const pathname = usePathname()
+	const [user, setUser] = useState<any>(null);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const pathname = usePathname();
 
 	useEffect(() => {
 		// Mock user for now - replace with actual auth logic
-		setUser({ full_name: "Ernz", email: "ernz@example.com" })
-	}, [])
+		setUser({ full_name: "Ernesto Catungal", email: "ernesto@example.com" });
+	}, []);
 
 	const navigation = [
 		{ name: "Home", href: "/", icon: Home },
 		{ name: "My Reservations", href: "/my-reservations", icon: Calendar },
 		{ name: "Settings", href: "/settings", icon: Settings },
-		{ name: "Hospital Admin", href: "/hospital-admin", icon: User },
-	]
+		{ name: "Hospital Admin", href: "/hospital-admin", icon: Building },
+	];
 
 	return (
 		<html lang="en">
@@ -78,24 +81,23 @@ export default function RootLayout({
 
 								{/* User Menu */}
 								<div className="hidden md:flex items-center gap-3">
+									{/* Notification Bell */}
+									<button className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
+										<Bell className="w-5 h-5 text-slate-600" />
+									</button>
+
 									{user ?
-										<div className="flex items-center gap-3">
+										<div className="flex items-center gap-2">
 											<div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50">
 												<User className="w-4 h-4 text-slate-500" />
 												<span className="text-sm font-medium text-slate-700">
 													{user.full_name || user.email}
 												</span>
 											</div>
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={() => console.log('logout')}
-												className="text-slate-500 hover:text-slate-700">
-												<LogOut className="w-4 h-4" />
-											</Button>
+											<ChevronRight className="w-4 h-4 text-slate-400" />
 										</div>
 									:	<Button
-											onClick={() => console.log('login')}
+											onClick={() => console.log("login")}
 											className="bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 rounded-xl">
 											Sign In
 										</Button>
@@ -151,14 +153,14 @@ export default function RootLayout({
 													<Button
 														variant="outline"
 														className="w-full justify-start"
-														onClick={() => console.log('logout')}>
+														onClick={() => console.log("logout")}>
 														<LogOut className="w-4 h-4 mr-2" />
 														Sign Out
 													</Button>
 												</div>
 											:	<Button
 													className="w-full bg-gradient-to-r from-rose-500 to-red-600"
-													onClick={() => console.log('login')}>
+													onClick={() => console.log("login")}>
 													Sign In
 												</Button>
 											}
@@ -180,7 +182,9 @@ export default function RootLayout({
 									<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center">
 										<Droplet className="w-4 h-4 text-white" />
 									</div>
-									<span className="font-semibold text-slate-900">BloodLink</span>
+									<span className="font-semibold text-slate-900">
+										BloodLink
+									</span>
 								</div>
 								<p className="text-sm text-slate-500">
 									Connecting lives, one donation at a time.
@@ -194,5 +198,5 @@ export default function RootLayout({
 				</div>
 			</body>
 		</html>
-	)
+	);
 }

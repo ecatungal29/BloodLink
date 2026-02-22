@@ -1,6 +1,4 @@
-"use cache";
-
-export default async function FeatureCards() {
+export default function FeatureCards() {
 	return (
 		<div className="grid md:grid-cols-3 gap-8 mb-12">
 			<div className="bg-white p-6 rounded-lg shadow-lg">

@@ -1,8 +1,6 @@
-"use cache";
-
 import Link from "next/link";
 
-export default async function HeroSection() {
+export default function HeroSection() {
 	return (
 		<div className="text-center mb-12">
 			<h1 className="text-4xl font-bold text-red-600 mb-4">BloodLink</h1>
