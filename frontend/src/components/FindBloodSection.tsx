@@ -3,35 +3,78 @@
 import { useState } from "react";
 import { Search, MapPin, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-const BLOOD_TYPES = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"];
+const bloodTypes = [
+	{ type: "A+", color: "from-rose-400 to-rose-500" },
+	{ type: "A-", color: "from-rose-500 to-rose-600" },
+	{ type: "B+", color: "from-red-400 to-red-500" },
+	{ type: "B-", color: "from-red-500 to-red-600" },
+	{ type: "AB+", color: "from-pink-400 to-pink-500" },
+	{ type: "AB-", color: "from-pink-500 to-pink-600" },
+	{ type: "O+", color: "from-orange-400 to-orange-500" },
+	{ type: "O-", color: "from-orange-500 to-orange-600" },
+];
 
-const CITIES = ["All Cities", "Cityville", "Downtown", "Lakeshore", "West Heights", "Sunrise Valley"];
+function BloodTypeSelector({
+	selected,
+	onSelect,
+}: {
+	selected: string | null;
+	onSelect: (type: string) => void;
+}) {
+	return (
+		<div className="w-full">
+			<label className="block text-sm font-medium text-slate-700 mb-3">
+				Select Blood Type
+			</label>
+			<div className="grid grid-cols-4 gap-3">
+				{bloodTypes.map((blood) => (
+					<motion.button
+						key={blood.type}
+						whileHover={{ scale: 1.05 }}
+						whileTap={{ scale: 0.95 }}
+						onClick={() => onSelect(blood.type)}
+						className={cn(
+							"relative p-4 rounded-xl font-bold text-lg transition-all duration-300",
+							selected === blood.type ?
+								`bg-gradient-to-br ${blood.color} text-white shadow-lg`
+							:	"bg-white border-2 border-slate-200 text-slate-700 hover:border-rose-200 hover:bg-rose-50",
+						)}>
+						{blood.type}
+						{selected === blood.type && (
+							<motion.div
+								layoutId="selected-blood"
+								className="absolute inset-0 rounded-xl ring-2 ring-offset-2 ring-rose-400"
+								initial={false}
+							/>
+						)}
+					</motion.button>
+				))}
+			</div>
+		</div>
+	);
+}
+
+const CITIES = [
+	"All Cities",
+	"Cityville",
+	"Downtown",
+	"Lakeshore",
+	"West Heights",
+	"Sunrise Valley",
+];
 
 const SORT_OPTIONS = ["Nearest to Me", "Most Available", "Alphabetical"];
 
 interface FindBloodSectionProps {
-	onSearch?: (params: { bloodType: string | null; query: string; city: string; sort: string }) => void;
+	onSearch?: (params: {
+		bloodType: string | null;
+		query: string;
+		city: string;
+		sort: string;
+	}) => void;
 }
-
-const containerVariants = {
-	hidden: {},
-	visible: {
-		transition: {
-			staggerChildren: 0.06,
-		},
-	},
-};
-
-const buttonVariants = {
-	hidden: { opacity: 0, scale: 0.8, y: 8 },
-	visible: {
-		opacity: 1,
-		scale: 1,
-		y: 0,
-		transition: { type: "spring" as const, stiffness: 400, damping: 20 },
-	},
-};
 
 export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 	const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -62,54 +105,10 @@ export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 				{/* Blood Type Selector + Search & Filters */}
 				<div className="border border-slate-200 rounded-xl p-4">
 					<div className="mb-8">
-						<p className="text-sm font-semibold text-slate-700 mb-4">
-							Select Blood Type
-						</p>
-						<motion.div
-							className="grid grid-cols-4 gap-3"
-							variants={containerVariants}
-							initial="hidden"
-							animate="visible"
-						>
-							{BLOOD_TYPES.map((type) => {
-								const isSelected = selectedType === type;
-								return (
-									<motion.button
-										key={type}
-										variants={buttonVariants}
-										onClick={() => handleTypeSelect(type)}
-										animate={
-											isSelected
-												? {
-														scale: 1,
-														backgroundColor: "#e11d48",
-														color: "#ffffff",
-														borderColor: "#e11d48",
-														boxShadow: "0 2px 8px rgba(225,29,72,0.35)",
-												  }
-												: {
-														scale: 1,
-														backgroundColor: "#ffffff",
-														color: "#334155",
-														borderColor: "#e2e8f0",
-														boxShadow: "0 0px 0px rgba(225,29,72,0)",
-												  }
-										}
-										whileTap={{ scale: 0.92 }}
-										whileHover={
-											isSelected
-												? { scale: 1.05, boxShadow: "0 4px 12px rgba(225,29,72,0.4)" }
-												: { scale: 1.05, borderColor: "#fda4af", color: "#e11d48" }
-										}
-										transition={{ type: "spring", stiffness: 500, damping: 22 }}
-										className="px-6 py-3 rounded-xl border-2 font-semibold text-sm"
-										style={{ willChange: "transform" }}
-									>
-										{type}
-									</motion.button>
-								);
-							})}
-						</motion.div>
+						<BloodTypeSelector
+							selected={selectedType}
+							onSelect={handleTypeSelect}
+						/>
 					</div>
 
 					{/* Search & Filters */}
@@ -152,7 +151,9 @@ export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 
 						{/* Sort */}
 						<div>
-							<p className="text-sm font-semibold text-slate-700 mb-2">Sort by</p>
+							<p className="text-sm font-semibold text-slate-700 mb-2">
+								Sort by
+							</p>
 							<div className="relative">
 								<select
 									value={sort}
