@@ -63,12 +63,29 @@ export default function RootLayout({
 								</Link>
 
 								{/* Desktop Navigation */}
-								<div className="hidden md:flex items-center gap-1">
+								<div className="hidden lg:flex items-center gap-1">
 									{navigation.map((item) => (
 										<Link
 											key={item.href}
 											href={item.href}
 											className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+												pathname === item.href ?
+													"bg-rose-50 text-rose-600"
+												:	"text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+											}`}>
+											<item.icon className="w-4 h-4" />
+											{item.name}
+										</Link>
+									))}
+								</div>
+
+								{/* Tablet Navigation */}
+								<div className="hidden md:flex lg:hidden items-center gap-1">
+									{navigation.map((item) => (
+										<Link
+											key={item.href}
+											href={item.href}
+											className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
 												pathname === item.href ?
 													"bg-rose-50 text-rose-600"
 												:	"text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -104,9 +121,9 @@ export default function RootLayout({
 									}
 								</div>
 
-								{/* Mobile Menu Button */}
+								{/* Mobile Menu Button - Only show on screens smaller than md */}
 								<button
-									className="md:hidden p-2 rounded-xl hover:bg-slate-100"
+									className="flex md:hidden p-2 rounded-xl hover:bg-slate-100"
 									onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
 									{mobileMenuOpen ?
 										<X className="w-6 h-6 text-slate-600" />
@@ -122,7 +139,7 @@ export default function RootLayout({
 									initial={{ opacity: 0, height: 0 }}
 									animate={{ opacity: 1, height: "auto" }}
 									exit={{ opacity: 0, height: 0 }}
-									className="md:hidden border-t border-slate-100 bg-white">
+									className="md:hidden lg:hidden border-t border-slate-100 bg-white">
 									<div className="px-4 py-4 space-y-2">
 										{navigation.map((item) => (
 											<Link
