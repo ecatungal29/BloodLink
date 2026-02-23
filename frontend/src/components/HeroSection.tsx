@@ -11,8 +11,9 @@ export default function HeroSection() {
 			</div>
 
 			{/* Heading */}
-			<h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight">
-				Find Blood, Save Lives
+			<h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+				<span className="text-slate-900">Find Blood, </span>
+				<span className="text-rose-600">Save Lives</span>
 			</h1>
 
 			{/* Description */}

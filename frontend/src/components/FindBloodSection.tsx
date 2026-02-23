@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, MapPin, ChevronDown } from "lucide-react";
+import { motion } from "framer-motion";
 
 const BLOOD_TYPES = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"];
 
@@ -12,6 +13,25 @@ const SORT_OPTIONS = ["Nearest to Me", "Most Available", "Alphabetical"];
 interface FindBloodSectionProps {
 	onSearch?: (params: { bloodType: string | null; query: string; city: string; sort: string }) => void;
 }
+
+const containerVariants = {
+	hidden: {},
+	visible: {
+		transition: {
+			staggerChildren: 0.06,
+		},
+	},
+};
+
+const buttonVariants = {
+	hidden: { opacity: 0, scale: 0.8, y: 8 },
+	visible: {
+		opacity: 1,
+		scale: 1,
+		y: 0,
+		transition: { type: "spring" as const, stiffness: 400, damping: 20 },
+	},
+};
 
 export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 	const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -39,78 +59,111 @@ export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 					</p>
 				</div>
 
-				{/* Blood Type Selector */}
-				<div className="mb-8">
-					<p className="text-sm font-semibold text-slate-700 mb-4">
-						Select Blood Type
-					</p>
-					<div className="flex flex-wrap gap-3">
-						{BLOOD_TYPES.map((type) => (
-							<button
-								key={type}
-								onClick={() => handleTypeSelect(type)}
-								className={`px-6 py-3 rounded-xl border-2 font-semibold text-sm transition-all ${
-									selectedType === type
-										? "bg-rose-600 border-rose-600 text-white shadow-sm"
-										: "border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600"
-								}`}>
-								{type}
-							</button>
-						))}
-					</div>
-				</div>
-
-				{/* Search & Filters */}
-				<div className="grid md:grid-cols-3 gap-5">
-					{/* Search */}
-					<div>
-						<p className="text-sm font-semibold text-slate-700 mb-2">
-							Search Hospital
+				{/* Blood Type Selector + Search & Filters */}
+				<div className="border border-slate-200 rounded-xl p-4">
+					<div className="mb-8">
+						<p className="text-sm font-semibold text-slate-700 mb-4">
+							Select Blood Type
 						</p>
-						<div className="relative">
-							<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-							<input
-								type="text"
-								placeholder="Search by name..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent"
-							/>
-						</div>
+						<motion.div
+							className="grid grid-cols-4 gap-3"
+							variants={containerVariants}
+							initial="hidden"
+							animate="visible"
+						>
+							{BLOOD_TYPES.map((type) => {
+								const isSelected = selectedType === type;
+								return (
+									<motion.button
+										key={type}
+										variants={buttonVariants}
+										onClick={() => handleTypeSelect(type)}
+										animate={
+											isSelected
+												? {
+														scale: 1,
+														backgroundColor: "#e11d48",
+														color: "#ffffff",
+														borderColor: "#e11d48",
+														boxShadow: "0 2px 8px rgba(225,29,72,0.35)",
+												  }
+												: {
+														scale: 1,
+														backgroundColor: "#ffffff",
+														color: "#334155",
+														borderColor: "#e2e8f0",
+														boxShadow: "0 0px 0px rgba(225,29,72,0)",
+												  }
+										}
+										whileTap={{ scale: 0.92 }}
+										whileHover={
+											isSelected
+												? { scale: 1.05, boxShadow: "0 4px 12px rgba(225,29,72,0.4)" }
+												: { scale: 1.05, borderColor: "#fda4af", color: "#e11d48" }
+										}
+										transition={{ type: "spring", stiffness: 500, damping: 22 }}
+										className="px-6 py-3 rounded-xl border-2 font-semibold text-sm"
+										style={{ willChange: "transform" }}
+									>
+										{type}
+									</motion.button>
+								);
+							})}
+						</motion.div>
 					</div>
 
-					{/* City Filter */}
-					<div>
-						<p className="text-sm font-semibold text-slate-700 mb-2">
-							Filter by City
-						</p>
-						<div className="relative">
-							<MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-							<select
-								value={city}
-								onChange={(e) => setCity(e.target.value)}
-								className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent appearance-none bg-white">
-								{CITIES.map((c) => (
-									<option key={c}>{c}</option>
-								))}
-							</select>
-							<ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+					{/* Search & Filters */}
+					<div className="grid md:grid-cols-3 gap-5">
+						{/* Search */}
+						<div>
+							<p className="text-sm font-semibold text-slate-700 mb-2">
+								Search Hospital
+							</p>
+							<div className="relative">
+								<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+								<input
+									type="text"
+									placeholder="Search by name..."
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent"
+								/>
+							</div>
 						</div>
-					</div>
 
-					{/* Sort */}
-					<div>
-						<p className="text-sm font-semibold text-slate-700 mb-2">Sort by</p>
-						<div className="relative">
-							<select
-								value={sort}
-								onChange={(e) => setSort(e.target.value)}
-								className="w-full px-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent appearance-none bg-white">
-								{SORT_OPTIONS.map((s) => (
-									<option key={s}>{s}</option>
-								))}
-							</select>
-							<ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+						{/* City Filter */}
+						<div>
+							<p className="text-sm font-semibold text-slate-700 mb-2">
+								Filter by City
+							</p>
+							<div className="relative">
+								<MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+								<select
+									value={city}
+									onChange={(e) => setCity(e.target.value)}
+									className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent appearance-none bg-white">
+									{CITIES.map((c) => (
+										<option key={c}>{c}</option>
+									))}
+								</select>
+								<ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+							</div>
+						</div>
+
+						{/* Sort */}
+						<div>
+							<p className="text-sm font-semibold text-slate-700 mb-2">Sort by</p>
+							<div className="relative">
+								<select
+									value={sort}
+									onChange={(e) => setSort(e.target.value)}
+									className="w-full px-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent appearance-none bg-white">
+									{SORT_OPTIONS.map((s) => (
+										<option key={s}>{s}</option>
+									))}
+								</select>
+								<ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+							</div>
 						</div>
 					</div>
 				</div>
