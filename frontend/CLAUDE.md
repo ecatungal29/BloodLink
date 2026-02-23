@@ -52,8 +52,30 @@ The default is `http://localhost:8000` (Django backend). All `/api/*` requests f
 
 Tailwind CSS with a custom `primary` color scale defined in `tailwind.config.js` (red shades, matching Tailwind's built-in `red-*`). Current code uses `red-*` classes directly rather than `primary-*`. The brand color is red (`red-600` for primary actions, `red-500` for hover targets).
 
-## Known Issues
+## Visual Development
 
-- `Navigation.tsx` is marked `"use cache"` but uses `useRouter` and accepts an `onLogout` event handler — this conflicts with the cache/server component model and will cause runtime errors.
-- `axios` and `lucide-react` are installed but unused; all HTTP requests use native `fetch`.
-- `cacheComponents: true` is experimental in Next.js 16; the `"use cache"` directive behavior may change.
+### Design Principles
+
+Comprehensive design checklist in `/context/design-principles.md`. When making visual (front-end, UI/UX) changes, always refer to this file for guidance.
+
+### Quick Visual Check
+
+IMMEDIATELY after implementing any front-end change:
+
+1. **Identify what changed** - Review the modified components/pages
+2. **Navigate to affected pages** - Use `mcp__playwright__browser_navigate` to visit each changed view
+3. **Verify design compliance** - Compare against `/context/design-principles.md`
+4. **Validate feature implementation** - Ensure the change fulfills the user's specific request
+5. **Capture evidence** - Take a full page screenshot at desktop viewport (1440px) of each changed view
+6. **Check for errors** - Run `mcp__playwright__browser_console_messages`
+
+### Comprehensive Design Review
+
+Use `/design-review` (slash command) for thorough design validation when:
+
+- Completing significant UI/UX features
+- Before finalizing PRs with visual changes
+- Needing comprehensive accessibility and responsiveness testing
+
+The agent tests all interactive states, responsiveness (375/768/1440px), WCAG 2.1 AA accessibility, and produces a structured report (Blockers / High-Priority / Medium-Priority / Nitpicks).
+
