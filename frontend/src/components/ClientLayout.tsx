@@ -73,25 +73,8 @@ export default function ClientLayout({
 							))}
 						</div>
 
-						{/* Tablet Navigation */}
-						<div className="hidden md:flex lg:hidden items-center gap-1">
-							{navigation.map((item) => (
-								<Link
-									key={item.href}
-									href={item.href}
-									className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-										pathname === item.href ?
-											"bg-rose-50 text-rose-600"
-										:	"text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-									}`}>
-									<item.icon className="w-4 h-4" />
-									{item.name}
-								</Link>
-							))}
-						</div>
-
 						{/* User Menu */}
-						<div className="hidden md:flex items-center gap-3">
+						<div className="hidden lg:flex items-center gap-3">
 							{/* Notification Bell */}
 							<button aria-label="Notifications" className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
 								<Bell className="w-5 h-5 text-slate-600" />
@@ -119,7 +102,7 @@ export default function ClientLayout({
 						<button
 							aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
 							aria-expanded={mobileMenuOpen}
-							className="flex md:hidden p-2 rounded-xl hover:bg-slate-100"
+							className="flex lg:hidden p-2 rounded-xl hover:bg-slate-100"
 							onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
 							{mobileMenuOpen ?
 								<X className="w-6 h-6 text-slate-600" />
@@ -135,7 +118,7 @@ export default function ClientLayout({
 							initial={{ opacity: 0, height: 0 }}
 							animate={{ opacity: 1, height: "auto" }}
 							exit={{ opacity: 0, height: 0 }}
-							className="md:hidden lg:hidden border-t border-slate-100 bg-white">
+							className="lg:hidden border-t border-slate-100 bg-white">
 							<div className="px-4 py-4 space-y-2">
 								{navigation.map((item) => (
 									<Link
