@@ -38,3 +38,9 @@ Thumbs.db
 
 # MCP
 .mcp.json
+
+# Design review agent artifacts (screenshots, Playwright scripts, logs)
+/review_*
+/cur_*
+/final_*.png
+/blood-type-animation.png
