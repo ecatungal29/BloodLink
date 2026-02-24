@@ -97,8 +97,8 @@ export default function FindBloodSection({ onSearch }: FindBloodSectionProps) {
 						Find Blood Near You
 					</h2>
 					<p className="text-slate-500 max-w-xl mx-auto">
-						Start your search below (get real location in real-available units
-						nearby hospitals)
+						Select a blood type and search for nearby hospitals with real-time
+						availability.
 					</p>
 				</div>
 
