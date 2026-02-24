@@ -1,4 +1,4 @@
-"use cache";
+"use client";
 
 import { useRouter } from "next/navigation";
 
@@ -7,7 +7,7 @@ interface NavigationProps {
 	onLogout: () => void;
 }
 
-export default async function Navigation({
+export default function Navigation({
 	userName,
 	onLogout,
 }: NavigationProps) {

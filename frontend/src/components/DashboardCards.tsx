@@ -1,5 +1,3 @@
-"use cache";
-
 interface BloodRequest {
 	id: string;
 	blood_type: string;
