@@ -24,7 +24,7 @@ The default is `http://localhost:8000` (Django backend). All `/api/*` requests f
 
 ## Architecture
 
-**Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS
+**Stack**: Next.js 15, React 18, TypeScript, Tailwind CSS
 
 **App Router structure** (`src/app/`):
 - `/` — Public landing page (server component)

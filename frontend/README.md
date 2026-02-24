@@ -27,7 +27,7 @@ A modern blood donation platform frontend built with Next.js 14 and Tailwind CSS
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 with App Router
+- **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
