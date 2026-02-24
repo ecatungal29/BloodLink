@@ -99,7 +99,7 @@ export default function RootLayout({
 								{/* User Menu */}
 								<div className="hidden md:flex items-center gap-3">
 									{/* Notification Bell */}
-									<button className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
+									<button aria-label="Notifications" className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
 										<Bell className="w-5 h-5 text-slate-600" />
 									</button>
 
@@ -123,6 +123,8 @@ export default function RootLayout({
 
 								{/* Mobile Menu Button - Only show on screens smaller than md */}
 								<button
+									aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+									aria-expanded={mobileMenuOpen}
 									className="flex md:hidden p-2 rounded-xl hover:bg-slate-100"
 									onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
 									{mobileMenuOpen ?

@@ -153,11 +153,15 @@ export default function HospitalGrid() {
 								</div>
 
 								<div className="flex items-center gap-2">
-									<button className="flex-1 flex items-center justify-center gap-2 bg-rose-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors">
+									<button
+										aria-label={`Reserve blood at ${hospital.name}`}
+										className="flex-1 flex items-center justify-center gap-2 bg-rose-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors">
 										Reserve Now
 										<ChevronRight className="w-4 h-4" />
 									</button>
-									<button className="p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+									<button
+										aria-label={`Save ${hospital.name}`}
+										className="p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
 										<Bookmark className="w-4 h-4 text-slate-500" />
 									</button>
 								</div>

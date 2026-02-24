@@ -18,7 +18,7 @@ interface DashboardCardsProps {
 	donations: Donation[];
 }
 
-export default async function DashboardCards({
+export default function DashboardCards({
 	bloodRequests,
 	donations,
 }: DashboardCardsProps) {
