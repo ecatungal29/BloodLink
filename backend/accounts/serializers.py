@@ -5,27 +5,33 @@ from .models import User, DonorProfile
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
-    
+
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password_confirm', 'first_name', 'last_name', 
-                 'phone_number', 'blood_type', 'user_type', 'date_of_birth', 'address']
-    
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'password', 'password_confirm']
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match")
         return attrs
-    
+
     def create(self, validated_data):
         validated_data.pop('password_confirm')
+
+        # Auto-generate a unique username from the email
+        base = validated_data['email'].split('@')[0]
+        username, counter = base, 1
+        while User.objects.filter(username=username).exists():
+            username = f'{base}{counter}'
+            counter += 1
+        validated_data['username'] = username
+
         user = User.objects.create_user(**validated_data)
-        
-        # Create donor profile if user is a donor
-        if user.user_type == 'donor':
-            DonorProfile.objects.create(user=user)
-        
+        DonorProfile.objects.create(user=user)
         return user
 
 

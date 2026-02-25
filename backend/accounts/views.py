@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.conf import settings
+import requests
 from .models import DonorProfile
 from .serializers import (
-    UserRegistrationSerializer, UserSerializer, 
+    UserRegistrationSerializer, UserSerializer,
     DonorProfileSerializer, LoginSerializer
 )
 
@@ -49,6 +51,72 @@ class LoginView(APIView):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         })
+
+
+class GoogleLoginView(APIView):
+    """API endpoint for Google OAuth sign-in / sign-up"""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        access_token = request.data.get('access_token')
+        if not access_token:
+            return Response({'error': 'access_token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify the token and fetch user info from Google
+        try:
+            google_response = requests.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=10,
+            )
+        except requests.RequestException:
+            return Response({'error': 'Could not connect to Google'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        if google_response.status_code != 200:
+            return Response({'error': 'Invalid Google token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        google_data = google_response.json()
+        email = google_data.get('email')
+        if not email:
+            return Response({'error': 'Google account has no email'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not google_data.get('email_verified', False):
+            return Response({'error': 'Google email is not verified'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get or create the user
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': _unique_username(email),
+                'first_name': google_data.get('given_name', ''),
+                'last_name': google_data.get('family_name', ''),
+                'is_verified': True,
+            }
+        )
+
+        if created:
+            user.set_unusable_password()
+            user.save()
+            if user.user_type == 'donor':
+                DonorProfile.objects.create(user=user)
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': UserSerializer(user).data,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
+
+
+def _unique_username(email):
+    """Derive a unique username from an email address."""
+    base = email.split('@')[0]
+    username = base
+    counter = 1
+    while User.objects.filter(username=username).exists():
+        username = f'{base}{counter}'
+        counter += 1
+    return username
 
 
 class LogoutView(APIView):
