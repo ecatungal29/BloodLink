@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,6 +42,7 @@ export default function ClientLayout({
 	];
 
 	return (
+		<GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
 		<div className="min-h-screen bg-slate-50">
 			{/* Navigation */}
 			<nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
@@ -190,5 +192,6 @@ export default function ClientLayout({
 				</div>
 			</footer>
 		</div>
+		</GoogleOAuthProvider>
 	);
 }
