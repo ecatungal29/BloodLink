@@ -12,6 +12,8 @@ npm run lint     # ESLint via next lint
 
 No test runner is configured yet.
 
+Read first the project README.md `\BloodLink\README.md` for this project plan.
+
 ## Environment
 
 Create a `.env.local` file to configure the backend URL:
@@ -53,6 +55,13 @@ The default is `http://localhost:8000` (Django backend). All `/api/*` requests f
 Tailwind CSS with a custom `primary` color scale defined in `tailwind.config.js` (red shades, matching Tailwind's built-in `red-*`). Current code uses `red-*` classes directly rather than `primary-*`. The brand color is red (`red-600` for primary actions, `red-500` for hover targets).
 
 ## Visual Development
+
+### Design Language
+
+Color Palette: Deep crimson red (#DC2626) as primary accent, soft whites and light grays for breathing room, dark slate for text
+Style: Medical-grade elegance with rounded cards, subtle shadows, smooth micro-interactions
+Typography: Clean, modern Inter-style system fonts
+Feel: Trustworthy, urgent yet calm, professional healthcare aesthetic
 
 ### Design Principles
 

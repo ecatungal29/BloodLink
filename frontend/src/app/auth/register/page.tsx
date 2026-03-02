@@ -30,7 +30,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
   },
 }
 
@@ -39,9 +39,10 @@ export default function Register() {
     first_name: '',
     last_name: '',
     email: '',
-    phone_number: '',
     password: '',
     password_confirm: '',
+    role: 'staff',
+    hospital: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -75,7 +76,7 @@ export default function Register() {
     onError: () => setError('Google sign-up failed. Please try again.'),
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -124,8 +125,10 @@ export default function Register() {
       >
         {/* Header */}
         <motion.div className="text-center mb-8" variants={itemVariants}>
-          <h1 className="text-3xl font-bold text-slate-900">Create your account</h1>
-          <p className="mt-2 text-sm text-slate-500">Join our community of life savers</p>
+          <h1 className="text-3xl font-bold text-slate-900">Request system access</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            For authorized hospital staff and administrators only
+          </p>
         </motion.div>
 
         {/* Card */}
@@ -204,24 +207,41 @@ export default function Register() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="john@example.com"
+                placeholder="john@hospital.org"
                 className={inputClass}
                 value={formData.email}
                 onChange={handleChange}
               />
             </div>
 
-            {/* Phone */}
+            {/* Role */}
             <div>
-              <label htmlFor="phone_number" className={labelClass}>Phone Number</label>
-              <input
-                id="phone_number"
-                name="phone_number"
-                type="tel"
-                autoComplete="tel"
-                placeholder="+1 (555) 000-0000"
+              <label htmlFor="role" className={labelClass}>Role</label>
+              <select
+                id="role"
+                name="role"
+                required
                 className={inputClass}
-                value={formData.phone_number}
+                value={formData.role}
+                onChange={handleChange}
+              >
+                <option value="hospital_admin">Hospital Admin</option>
+                <option value="staff">Staff</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+
+            {/* Hospital */}
+            <div>
+              <label htmlFor="hospital" className={labelClass}>Hospital</label>
+              <input
+                id="hospital"
+                name="hospital"
+                type="text"
+                required
+                placeholder="e.g. Metro General Hospital"
+                className={inputClass}
+                value={formData.hospital}
                 onChange={handleChange}
               />
             </div>
@@ -263,7 +283,7 @@ export default function Register() {
               disabled={loading}
               className="w-full py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-300 disabled:opacity-50 transition-colors mt-2"
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Submitting...' : 'Request Access'}
             </button>
           </form>
         </motion.div>
