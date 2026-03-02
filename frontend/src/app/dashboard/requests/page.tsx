@@ -2,18 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, X } from 'lucide-react'
-
-interface BloodRequest {
-  id: number
-  component_type: string
-  abo_group: string
-  rh_factor: string
-  units_needed: number
-  urgency_level: string
-  status: string
-  requesting_hospital?: string
-  created_at?: string
-}
+import { api } from '@/api/client'
+import type { BloodRequest, PaginatedResponse } from '@/types'
 
 type StatusFilter = 'all' | 'open' | 'fulfilled' | 'closed'
 
@@ -29,10 +19,10 @@ const URGENCY_BADGE: Record<string, string> = {
   routine: 'bg-slate-100 text-slate-500',
 }
 
-const COMPONENT_OPTIONS = ['RBC', 'Platelets', 'Plasma', 'Whole Blood']
+const COMPONENT_OPTIONS = ['RBC', 'Platelets', 'Plasma']
 const ABO_OPTIONS = ['A', 'B', 'AB', 'O']
 const RH_OPTIONS = ['+', '-']
-const URGENCY_OPTIONS = ['Emergency', 'Urgent', 'Routine']
+const URGENCY_OPTIONS = ['Routine', 'Urgent', 'Emergency']
 const STATUS_TABS: { label: string; value: StatusFilter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Open', value: 'open' },
@@ -42,10 +32,11 @@ const STATUS_TABS: { label: string; value: StatusFilter }[] = [
 
 const defaultForm = {
   component_type: 'RBC',
-  abo_group: 'A',
-  rh_factor: '+',
+  abo_type: 'A',
+  rh_type: '+',
   units_needed: 1,
   urgency_level: 'Routine',
+  notes: '',
 }
 
 export default function RequestsPage() {
@@ -59,15 +50,11 @@ export default function RequestsPage() {
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
-    const token = localStorage.getItem('access_token')
     try {
-      const res = await fetch('/api/requests/', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setRequests(data.results || data || [])
-      }
+      const { data } = await api.get<PaginatedResponse<BloodRequest> | BloodRequest[]>(
+        '/api/donations/requests/'
+      )
+      if (data) setRequests(Array.isArray(data) ? data : data.results)
     } catch (err) {
       console.error('Requests fetch error:', err)
     } finally {
@@ -88,32 +75,20 @@ export default function RequestsPage() {
     e.preventDefault()
     setSubmitting(true)
     setFormError('')
-    const token = localStorage.getItem('access_token')
-    try {
-      const res = await fetch('/api/requests/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...form,
-          urgency_level: form.urgency_level.toLowerCase(),
-        }),
-      })
-      if (res.ok) {
-        setShowModal(false)
-        setForm(defaultForm)
-        fetchRequests()
-      } else {
-        const data = await res.json()
-        setFormError(data.detail || data.error || 'Failed to create request')
-      }
-    } catch {
-      setFormError('Network error. Please try again.')
-    } finally {
-      setSubmitting(false)
+
+    const { error } = await api.post<BloodRequest>('/api/donations/requests/', {
+      ...form,
+      urgency_level: form.urgency_level.toLowerCase(),
+    })
+
+    if (error) {
+      setFormError(error)
+    } else {
+      setShowModal(false)
+      setForm(defaultForm)
+      fetchRequests()
     }
+    setSubmitting(false)
   }
 
   const SelectField = ({
@@ -145,7 +120,6 @@ export default function RequestsPage() {
     <div className="space-y-5">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        {/* Status tabs */}
         <div className="flex items-center gap-1 bg-white rounded-xl border border-slate-100 shadow-sm p-1">
           {STATUS_TABS.map((tab) => (
             <button
@@ -161,7 +135,6 @@ export default function RequestsPage() {
             </button>
           ))}
         </div>
-
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition-colors"
@@ -189,10 +162,7 @@ export default function RequestsPage() {
               <tr>
                 {['Component', 'ABO', 'Rh', 'Units', 'Urgency', 'Status', 'Hospital', 'Created'].map(
                   (col) => (
-                    <th
-                      key={col}
-                      className="text-left text-xs font-semibold text-slate-400 px-5 py-3 first:pl-5"
-                    >
+                    <th key={col} className="text-left text-xs font-semibold text-slate-400 px-5 py-3 first:pl-5">
                       {col}
                     </th>
                   )
@@ -209,24 +179,20 @@ export default function RequestsPage() {
                 return (
                   <tr key={req.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-5 py-3.5 font-medium text-slate-700">{req.component_type}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{req.abo_group}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{req.rh_factor}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{req.abo_type}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{req.rh_type}</td>
                     <td className="px-5 py-3.5 text-slate-700 font-medium">{req.units_needed}</td>
                     <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${URGENCY_BADGE[urgencyKey] || 'bg-slate-100 text-slate-500'}`}
-                      >
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${URGENCY_BADGE[urgencyKey] || 'bg-slate-100 text-slate-500'}`}>
                         {req.urgency_level}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${STATUS_BADGE[statusKey] || 'bg-slate-100 text-slate-500'}`}
-                      >
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${STATUS_BADGE[statusKey] || 'bg-slate-100 text-slate-500'}`}>
                         {req.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-500 text-xs">{req.requesting_hospital || '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-500 text-xs">{req.requesting_hospital_name || '—'}</td>
                     <td className="px-5 py-3.5 text-slate-500 text-xs">{createdAt}</td>
                   </tr>
                 )
@@ -259,10 +225,10 @@ export default function RequestsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <SelectField label="Component Type" name="component_type" value={form.component_type} options={COMPONENT_OPTIONS} />
-                <SelectField label="ABO Group" name="abo_group" value={form.abo_group} options={ABO_OPTIONS} />
+                <SelectField label="ABO Group" name="abo_type" value={form.abo_type} options={ABO_OPTIONS} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Rh Factor" name="rh_factor" value={form.rh_factor} options={RH_OPTIONS} />
+                <SelectField label="Rh Factor" name="rh_type" value={form.rh_type} options={RH_OPTIONS} />
                 <SelectField label="Urgency Level" name="urgency_level" value={form.urgency_level} options={URGENCY_OPTIONS} />
               </div>
               <div>
@@ -273,6 +239,16 @@ export default function RequestsPage() {
                   value={form.units_needed}
                   onChange={(e) => setForm((f) => ({ ...f, units_needed: parseInt(e.target.value) || 1 }))}
                   className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Notes <span className="text-slate-400">(optional)</span></label>
+                <textarea
+                  rows={2}
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="Additional context or contact info..."
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-2">

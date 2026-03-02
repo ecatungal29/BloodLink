@@ -2,16 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
-
-interface InventoryItem {
-  id: number
-  component_type: string
-  abo_group: string
-  rh_factor: string
-  units_available: number
-  status: string
-  last_updated: string
-}
+import { api } from '@/api/client'
+import type { InventoryItem, PaginatedResponse } from '@/types'
 
 const STALENESS_HOURS = 24
 
@@ -25,14 +17,13 @@ const STATUS_BADGE: Record<string, string> = {
 
 function getEffectiveStatus(item: InventoryItem): string {
   if (item.last_updated) {
-    const updatedAt = new Date(item.last_updated)
-    const hoursSince = (Date.now() - updatedAt.getTime()) / 36e5
+    const hoursSince = (Date.now() - new Date(item.last_updated).getTime()) / 36e5
     if (hoursSince > STALENESS_HOURS) return 'unverified'
   }
-  return item.status?.toLowerCase() || 'unverified'
+  return item.availability_status?.toLowerCase() || 'unverified'
 }
 
-const COMPONENT_OPTIONS = ['All', 'RBC', 'Platelets', 'Plasma', 'Whole Blood']
+const COMPONENT_OPTIONS = ['All', 'RBC', 'Platelets', 'Plasma']
 const ABO_OPTIONS = ['All', 'A', 'B', 'AB', 'O']
 const RH_OPTIONS = ['All', '+', '-']
 
@@ -43,20 +34,16 @@ export default function InventoryPage() {
 
   const fetchInventory = useCallback(async () => {
     setLoading(true)
-    const token = localStorage.getItem('access_token')
     const params = new URLSearchParams()
     if (filters.component !== 'All') params.set('component_type', filters.component)
-    if (filters.abo !== 'All') params.set('abo_group', filters.abo)
-    if (filters.rh !== 'All') params.set('rh_factor', filters.rh)
+    if (filters.abo !== 'All') params.set('abo_type', filters.abo)
+    if (filters.rh !== 'All') params.set('rh_type', filters.rh)
 
     try {
-      const res = await fetch(`/api/inventory/?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setItems(data.results || data || [])
-      }
+      const { data } = await api.get<PaginatedResponse<InventoryItem> | InventoryItem[]>(
+        `/api/donations/inventory/?${params}`
+      )
+      if (data) setItems(Array.isArray(data) ? data : data.results)
     } catch (err) {
       console.error('Inventory fetch error:', err)
     } finally {
@@ -133,19 +120,14 @@ export default function InventoryPage() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-400">
-            No inventory records found
-          </div>
+          <div className="py-16 text-center text-sm text-slate-400">No inventory records found</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50">
               <tr>
-                {['Component', 'ABO', 'Rh', 'Units', 'Status', 'Last Updated', 'Actions'].map(
+                {['Hospital', 'Component', 'ABO', 'Rh', 'Units', 'Status', 'Last Updated', 'Actions'].map(
                   (col) => (
-                    <th
-                      key={col}
-                      className="text-left text-xs font-semibold text-slate-400 px-5 py-3 first:pl-5"
-                    >
+                    <th key={col} className="text-left text-xs font-semibold text-slate-400 px-5 py-3 first:pl-5">
                       {col}
                     </th>
                   )
@@ -163,14 +145,13 @@ export default function InventoryPage() {
                   : '—'
                 return (
                   <tr key={item.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
+                    <td className="px-5 py-3.5 text-slate-500 text-xs">{item.hospital_name}</td>
                     <td className="px-5 py-3.5 font-medium text-slate-700">{item.component_type}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{item.abo_group}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{item.rh_factor}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{item.abo_type}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{item.rh_type}</td>
                     <td className="px-5 py-3.5 text-slate-700 font-medium">{item.units_available}</td>
                     <td className="px-5 py-3.5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${STATUS_BADGE[effectiveStatus] || 'bg-slate-100 text-slate-600'}`}
-                      >
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${STATUS_BADGE[effectiveStatus] || 'bg-slate-100 text-slate-600'}`}>
                         {effectiveStatus}
                       </span>
                     </td>

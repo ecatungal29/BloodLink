@@ -2,30 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { ClipboardList, AlertTriangle, Building2, Clock } from 'lucide-react'
-
-interface BloodRequest {
-  id: number
-  component_type?: string
-  blood_type?: string
-  abo_group?: string
-  rh_factor?: string
-  units_needed: number
-  urgency_level: string
-  status: string
-  requesting_hospital?: string
-  hospital_name?: string
-  created_at?: string
-}
-
-interface InventoryItem {
-  id: number
-  component_type: string
-  abo_group: string
-  rh_factor: string
-  units_available: number
-  status: string
-  last_updated?: string
-}
+import { api } from '@/api/client'
+import type { BloodRequest, InventoryItem, PaginatedResponse, Hospital } from '@/types'
 
 interface Stats {
   open_requests: number
@@ -36,12 +14,8 @@ interface Stats {
 
 const URGENCY_BADGE: Record<string, string> = {
   emergency: 'bg-red-100 text-red-700',
-  critical: 'bg-red-100 text-red-700',
   urgent: 'bg-amber-100 text-amber-700',
-  high: 'bg-amber-100 text-amber-700',
   routine: 'bg-slate-100 text-slate-600',
-  medium: 'bg-slate-100 text-slate-600',
-  low: 'bg-slate-100 text-slate-600',
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -74,37 +48,35 @@ export default function DashboardPage() {
   }, [])
 
   const fetchDashboardData = async () => {
-    const token = localStorage.getItem('access_token')
-    const headers = { Authorization: `Bearer ${token}` }
-
     try {
-      const [requestsRes, inventoryRes] = await Promise.allSettled([
-        fetch('/api/requests/', { headers }),
-        fetch('/api/inventory/', { headers }),
+      const [requestsRes, inventoryRes, hospitalsRes] = await Promise.allSettled([
+        api.get<PaginatedResponse<BloodRequest> | BloodRequest[]>('/api/donations/requests/'),
+        api.get<PaginatedResponse<InventoryItem> | InventoryItem[]>('/api/donations/inventory/'),
+        api.get<PaginatedResponse<Hospital> | Hospital[]>('/api/donations/hospitals/'),
       ])
 
-      if (requestsRes.status === 'fulfilled' && requestsRes.value.ok) {
-        const data = await requestsRes.value.json()
-        const requests: BloodRequest[] = data.results || data || []
+      if (requestsRes.status === 'fulfilled' && requestsRes.value.data) {
+        const raw = requestsRes.value.data
+        const requests: BloodRequest[] = Array.isArray(raw) ? raw : raw.results
         setRecentRequests(requests.slice(0, 5))
-        setStats((prev) => ({
-          ...prev,
-          open_requests: requests.filter((r) => r.status === 'open').length,
-          pending_responses: requests.filter((r) => r.status === 'open').length,
-        }))
+        const open = requests.filter((r) => r.status === 'open').length
+        setStats((prev) => ({ ...prev, open_requests: open, pending_responses: open }))
       }
 
-      if (inventoryRes.status === 'fulfilled' && inventoryRes.value.ok) {
-        const data = await inventoryRes.value.json()
-        const items: InventoryItem[] = data.results || data || []
+      if (inventoryRes.status === 'fulfilled' && inventoryRes.value.data) {
+        const raw = inventoryRes.value.data
+        const items: InventoryItem[] = Array.isArray(raw) ? raw : raw.results
         const alerts = items.filter((i) =>
-          ['critical', 'none'].includes(i.status?.toLowerCase())
+          ['critical', 'none'].includes(i.availability_status?.toLowerCase())
         )
         setInventoryAlerts(alerts.slice(0, 5))
-        setStats((prev) => ({
-          ...prev,
-          critical_items: alerts.length,
-        }))
+        setStats((prev) => ({ ...prev, critical_items: alerts.length }))
+      }
+
+      if (hospitalsRes.status === 'fulfilled' && hospitalsRes.value.data) {
+        const raw = hospitalsRes.value.data
+        const hospitals: Hospital[] = Array.isArray(raw) ? raw : raw.results
+        setStats((prev) => ({ ...prev, hospitals_active: hospitals.length }))
       }
     } catch (err) {
       console.error('Dashboard fetch error:', err)
@@ -114,34 +86,10 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    {
-      label: 'Open Requests',
-      value: stats.open_requests,
-      icon: ClipboardList,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Critical Inventory Items',
-      value: stats.critical_items,
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bg: 'bg-red-50',
-    },
-    {
-      label: 'Hospitals Active',
-      value: stats.hospitals_active,
-      icon: Building2,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Pending Responses',
-      value: stats.pending_responses,
-      icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-    },
+    { label: 'Open Requests', value: stats.open_requests, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Critical Inventory Items', value: stats.critical_items, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: 'Hospitals Active', value: stats.hospitals_active, icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Pending Responses', value: stats.pending_responses, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
   ]
 
   if (loading) {
@@ -162,10 +110,7 @@ export default function DashboardPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm"
-          >
+          <div key={card.label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
             <div className={`inline-flex p-2.5 rounded-xl ${card.bg} mb-3`}>
               <card.icon className={`w-5 h-5 ${card.color}`} />
             </div>
@@ -200,8 +145,7 @@ export default function DashboardPage() {
                 {recentRequests.map((req) => (
                   <tr key={req.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-5 py-3 font-medium text-slate-700">
-                      {req.component_type || req.blood_type || '—'}
-                      {req.abo_group && ` ${req.abo_group}${req.rh_factor || ''}`}
+                      {req.component_type} {req.blood_label}
                     </td>
                     <td className="px-3 py-3 text-slate-600">{req.units_needed}</td>
                     <td className="px-3 py-3">
@@ -236,7 +180,7 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b border-slate-50">
                   <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Component</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-3 py-3">ABO/Rh</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-3 py-3">Blood Type</th>
                   <th className="text-left text-xs font-medium text-slate-400 px-3 py-3">Units</th>
                   <th className="text-left text-xs font-medium text-slate-400 px-3 py-3">Status</th>
                 </tr>
@@ -245,11 +189,11 @@ export default function DashboardPage() {
                 {inventoryAlerts.map((item) => (
                   <tr key={item.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-5 py-3 font-medium text-slate-700">{item.component_type}</td>
-                    <td className="px-3 py-3 text-slate-600">{item.abo_group}{item.rh_factor}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.blood_label}</td>
                     <td className="px-3 py-3 text-slate-600">{item.units_available}</td>
                     <td className="px-3 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${INVENTORY_BADGE[item.status?.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}>
-                        {item.status}
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${INVENTORY_BADGE[item.availability_status?.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}>
+                        {item.availability_status}
                       </span>
                     </td>
                   </tr>
