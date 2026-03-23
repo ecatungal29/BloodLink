@@ -9,12 +9,14 @@ BloodLink backend provides comprehensive REST API endpoints for blood donation m
 ## Features
 
 ### 🔐 **Authentication System**
+
 - JWT-based authentication with refresh tokens
 - Custom user model with blood types and roles
 - Role-based access control (Donor, Recipient, Hospital, Blood Bank)
 - Password validation and secure token handling
 
 ### 🩸 **Blood Request Management**
+
 - Create and manage blood donation requests
 - Urgency levels (Low, Medium, High, Critical)
 - Patient information and medical details
@@ -22,24 +24,28 @@ BloodLink backend provides comprehensive REST API endpoints for blood donation m
 - Request status tracking (Pending, Matched, Completed, Cancelled)
 
 ### 🎯 **Donor Matching Algorithm**
+
 - Blood type compatibility checking
 - Location-based matching
 - Availability status management
 - Donation history tracking
 
 ### 📊 **Inventory Management**
+
 - Real-time blood stock tracking
 - Multiple blood bank locations
 - Automatic inventory updates
 - Blood type-wise availability
 
 ### 🏥 **Donation Tracking**
+
 - Schedule and manage donations
 - Track donation history
 - Location-based donation centers
 - Status management (Scheduled, Completed, Cancelled, No Show)
 
 ### 🏢 **Donation Centers**
+
 - Manage blood donation centers
 - Operating hours and contact information
 - Location services with geolocation
@@ -83,6 +89,7 @@ bloodlink/
 ### Authentication Endpoints
 
 #### User Registration
+
 ```http
 POST /api/auth/register/
 Content-Type: application/json
@@ -117,6 +124,7 @@ Response:
 ```
 
 #### User Login
+
 ```http
 POST /api/auth/login/
 Content-Type: application/json
@@ -136,6 +144,7 @@ Response:
 ```
 
 #### Profile Management
+
 ```http
 GET /api/auth/profile/me/
 Authorization: Bearer {access_token}
@@ -155,6 +164,7 @@ Response:
 ### Blood Request Endpoints
 
 #### Create Blood Request
+
 ```http
 POST /api/donations/requests/
 Authorization: Bearer {access_token}
@@ -177,6 +187,7 @@ Request Body:
 ```
 
 #### List Blood Requests
+
 ```http
 GET /api/donations/requests/public/
 Response:
@@ -200,6 +211,7 @@ Response:
 ### Donation Endpoints
 
 #### Schedule Donation
+
 ```http
 POST /api/donations/donations/schedule/
 Authorization: Bearer {access_token}
@@ -214,6 +226,7 @@ Request Body:
 ```
 
 #### Donation History
+
 ```http
 GET /api/donations/donations/
 Authorization: Bearer {access_token}
@@ -236,6 +249,7 @@ Response:
 ### Inventory Endpoints
 
 #### Blood Inventory
+
 ```http
 GET /api/donations/inventory/
 Authorization: Bearer {access_token}
@@ -257,6 +271,7 @@ Response:
 ### Donor Search Endpoints
 
 #### Search Compatible Donors
+
 ```http
 GET /api/donations/search-donors/?blood_type=O+&location=New+York
 Authorization: Bearer {access_token}
@@ -279,6 +294,7 @@ Response:
 ## Database Models
 
 ### User Model
+
 ```python
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -291,6 +307,7 @@ class User(AbstractUser):
 ```
 
 ### Blood Request Model
+
 ```python
 class BloodRequest(models.Model):
     requester = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -305,6 +322,7 @@ class BloodRequest(models.Model):
 ```
 
 ### Donation Model
+
 ```python
 class Donation(models.Model):
     donor = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -326,34 +344,42 @@ class Donation(models.Model):
 ### Installation
 
 1. **Create virtual environment**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/Scripts/activate
+
    ```
 
 2. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Environment configuration**
+
    ```bash
    cp .env.example .env
    # Edit .env with your database credentials
    ```
 
 4. **Database setup**
+
    ```bash
    createdb bloodlink_db
    ```
 
 5. **Run migrations**
+
    ```bash
    python manage.py makemigrations
    python manage.py migrate
    ```
 
 6. **Create superuser**
+
    ```bash
    python manage.py createsuperuser
    ```
@@ -366,6 +392,7 @@ class Donation(models.Model):
 ## Management Commands
 
 ### Database Operations
+
 ```bash
 # Create migrations
 python manage.py makemigrations
@@ -384,6 +411,7 @@ python manage.py collectstatic
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 python manage.py test
@@ -399,6 +427,7 @@ coverage run --source='.' manage.py test
 ## Configuration
 
 ### Environment Variables
+
 ```bash
 SECRET_KEY=your-secret-key-here
 DEBUG=True
@@ -410,6 +439,7 @@ DB_PORT=5432
 ```
 
 ### Django Settings
+
 - Custom user model: `AUTH_USER_MODEL = 'accounts.User'`
 - JWT authentication configuration
 - CORS settings for frontend integration
@@ -419,18 +449,21 @@ DB_PORT=5432
 ## Security
 
 ### Authentication
+
 - JWT tokens with configurable expiration
 - Password validation with Django's built-in validators
 - CORS configuration for frontend domains
 - Secure password hashing
 
 ### API Security
+
 - Permission-based access control
 - Request throttling
 - Input validation and sanitization
 - SQL injection prevention
 
 ### Data Protection
+
 - Environment variable configuration
 - Secure file uploads
 - GDPR compliance considerations
@@ -438,6 +471,7 @@ DB_PORT=5432
 ## Deployment
 
 ### Production Settings
+
 ```python
 # Production settings
 DEBUG=False
@@ -447,6 +481,7 @@ SECURE_HSTS_SECONDS=31536000
 ```
 
 ### Database Configuration
+
 ```python
 # Production database
 DATABASES = {
@@ -462,6 +497,7 @@ DATABASES = {
 ```
 
 ### Docker Deployment
+
 ```dockerfile
 FROM python:3.11-slim
 
@@ -480,17 +516,20 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 ## API Documentation
 
 ### Authentication Flow
+
 1. Register user account → Receive JWT tokens
 2. Include tokens in API requests → Authorization: Bearer {token}
 3. Refresh tokens when needed → Use refresh endpoint
 
 ### Error Handling
+
 - Standard HTTP status codes
 - Consistent error response format
 - Validation error messages
 - Logging for debugging
 
 ### Rate Limiting
+
 - Request throttling configuration
 - User-based rate limits
 - API endpoint protection
@@ -498,11 +537,13 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 ## Performance
 
 ### Database Optimization
+
 - Database indexing on frequently queried fields
 - Query optimization with select_related
 - Connection pooling configuration
 
 ### Caching
+
 - Redis integration for session storage
 - API response caching
 - Static file optimization
@@ -510,11 +551,13 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 ## Monitoring
 
 ### Logging
+
 - Structured logging configuration
 - Error tracking integration
 - Performance monitoring setup
 
 ### Health Checks
+
 - Database connection monitoring
 - API endpoint health checks
 - System resource monitoring
@@ -522,18 +565,21 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 ## Contributing
 
 ### Development Workflow
+
 1. Fork the repository
 2. Create feature branch
 3. Write tests for new features
 4. Submit pull request with tests
 
 ### Code Style
+
 - Follow PEP 8 guidelines
 - Use type hints
 - Document API endpoints
 - Write comprehensive tests
 
 ### Testing Guidelines
+
 - Unit tests for models and views
 - Integration tests for API endpoints
 - Test coverage minimum 80%
