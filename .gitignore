@@ -76,3 +76,6 @@ frontend/blood-type-animation.png
 
 .claude/
 CLAUDE.md
+
+# Git worktrees
+.worktrees/
