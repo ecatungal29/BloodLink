@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 import requests as http_requests
 
 from .models import User
-from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerializer, ProfileUpdateSerializer
 from .permissions import IsSuperAdmin, IsHospitalAdmin
 
 User = get_user_model()
@@ -137,10 +137,10 @@ class ProfileViewSet(viewsets.GenericViewSet):
     def me(self, request):
         if request.method == 'GET':
             return Response(self.get_serializer(request.user).data)
-        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(UserSerializer(request.user).data)
 
 
 class UserManagementViewSet(viewsets.ModelViewSet):
