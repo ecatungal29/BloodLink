@@ -1,5 +1,6 @@
 from rest_framework import generics, status, permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError as DRFValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -9,7 +10,7 @@ from django.core.exceptions import ValidationError
 import requests as http_requests
 
 from .models import User
-from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerializer, ProfileUpdateSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserCreateSerializer, LoginSerializer, ProfileUpdateSerializer
 from .permissions import IsSuperAdmin, IsHospitalAdmin
 
 User = get_user_model()
@@ -173,12 +174,19 @@ class ProfileViewSet(viewsets.GenericViewSet):
 
 
 class UserManagementViewSet(viewsets.ModelViewSet):
-    """Admin-only: manage all portal users."""
+    """hospital_admin and super_admin: manage portal users."""
     serializer_class = UserSerializer
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsHospitalAdmin]
 
     def get_queryset(self):
-        qs = User.objects.select_related('hospital').order_by('email')
+        user = self.request.user
+        if user.role == 'hospital_admin':
+            if user.hospital is None:
+                raise PermissionDenied("Your account has no hospital assigned. Contact a super admin.")
+            qs = User.objects.select_related('hospital').filter(hospital=user.hospital).order_by('email')
+        else:
+            qs = User.objects.select_related('hospital').order_by('email')
+
         hospital_id = self.request.query_params.get('hospital')
         if hospital_id:
             qs = qs.filter(hospital_id=hospital_id)
@@ -186,6 +194,20 @@ class UserManagementViewSet(viewsets.ModelViewSet):
         if role:
             qs = qs.filter(role=role)
         return qs
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role == 'hospital_admin':
+            serializer.validated_data['hospital'] = user.hospital
+        else:
+            if not serializer.validated_data.get('hospital'):
+                raise DRFValidationError({'hospital': 'Hospital is required.'})
+        serializer.save()
 
 
 def _unique_username(email):
