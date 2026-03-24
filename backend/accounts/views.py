@@ -1,4 +1,4 @@
-from rest_framework import generics, status, permissions, viewsets
+from rest_framework import generics, serializers, status, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError as DRFValidationError
 from rest_framework.response import Response
@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 import requests as http_requests
 
 from .models import User
-from .serializers import UserRegistrationSerializer, UserSerializer, UserCreateSerializer, LoginSerializer, ProfileUpdateSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserCreateSerializer, UserEditSerializer, LoginSerializer, ProfileUpdateSerializer
 from .permissions import IsSuperAdmin, IsHospitalAdmin
 
 User = get_user_model()
@@ -138,6 +138,11 @@ class PasswordChangeView(APIView):
     def post(self, request):
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
+        if not current_password or not new_password:
+            return Response(
+                {'error': 'current_password and new_password are required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not request.user.check_password(current_password):
             return Response(
@@ -198,6 +203,8 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return UserCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return UserEditSerializer
         return UserSerializer
 
     def perform_create(self, serializer):
@@ -208,6 +215,12 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             if not serializer.validated_data.get('hospital'):
                 raise DRFValidationError({'hospital': 'Hospital is required.'})
             serializer.save()
+
+    def perform_update(self, serializer):
+        role = serializer.validated_data.get('role')
+        if role == 'super_admin':
+            raise serializers.ValidationError({'role': 'Cannot assign super_admin role via this endpoint.'})
+        serializer.save()
 
 
 def _unique_username(email):

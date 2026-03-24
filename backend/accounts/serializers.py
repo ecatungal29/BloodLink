@@ -65,6 +65,13 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'phone_number']
 
 
+class UserEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone_number', 'role', 'is_active']
+        # email and hospital are intentionally excluded — not editable after creation
+
+
 class UserCreateSerializer(UserSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
 

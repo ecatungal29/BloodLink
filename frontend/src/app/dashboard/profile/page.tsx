@@ -23,16 +23,10 @@ interface PasswordForm {
   confirm_new_password: string
 }
 
-interface PasswordChangeApiError {
-  current_password?: string[]
-  new_password?: string[]
-  detail?: string
-  [key: string]: unknown
-}
-
 export default function ProfilePage() {
   const [profile, setProfile] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const [personalForm, setPersonalForm] = useState<PersonalInfoForm>({
     first_name: '',
@@ -51,6 +45,8 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [currentPasswordError, setCurrentPasswordError] = useState<string | null>(null)
+  const [newPasswordError, setNewPasswordError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProfile()
@@ -61,16 +57,17 @@ export default function ProfilePage() {
       const { data, error } = await api.get<User>('/api/auth/profile/me/')
       if (data) {
         setProfile(data)
+        setFetchError(null)
         setPersonalForm({
           first_name: data.first_name,
           last_name: data.last_name,
           phone_number: data.phone_number,
         })
       } else {
-        console.error('Profile fetch error:', error)
+        setFetchError(error ?? 'Failed to load profile. Please refresh the page.')
       }
-    } catch (err) {
-      console.error('Profile fetch error:', err)
+    } catch {
+      setFetchError('Failed to load profile. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -82,32 +79,38 @@ export default function ProfilePage() {
     setPersonalSuccess(false)
     setPersonalError(null)
 
-    const { data, error } = await api.patch<User>('/api/auth/profile/me/', {
-      first_name: personalForm.first_name,
-      last_name: personalForm.last_name,
-      phone_number: personalForm.phone_number,
-    })
+    try {
+      const { data, error } = await api.patch<User>('/api/auth/profile/me/', {
+        first_name: personalForm.first_name,
+        last_name: personalForm.last_name,
+        phone_number: personalForm.phone_number,
+      })
 
-    if (data) {
-      setProfile(data)
-      const stored = localStorage.getItem('user')
-      if (stored) {
-        const parsed = JSON.parse(stored) as User
-        localStorage.setItem('user', JSON.stringify({ ...parsed, ...data }))
+      if (data) {
+        setProfile(data)
+        const stored = localStorage.getItem('user')
+        if (stored) {
+          const parsed = JSON.parse(stored) as User
+          localStorage.setItem('user', JSON.stringify({ ...parsed, ...data }))
+        }
+        setPersonalSuccess(true)
+        setTimeout(() => setPersonalSuccess(false), 4000)
+      } else {
+        setPersonalError(error ?? 'Something went wrong.')
       }
-      setPersonalSuccess(true)
-      setTimeout(() => setPersonalSuccess(false), 4000)
-    } else {
-      setPersonalError(error ?? 'Something went wrong.')
+    } catch {
+      setPersonalError('Something went wrong. Please try again.')
+    } finally {
+      setPersonalSaving(false)
     }
-
-    setPersonalSaving(false)
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordSuccess(false)
     setPasswordError(null)
+    setCurrentPasswordError(null)
+    setNewPasswordError(null)
 
     if (passwordForm.new_password !== passwordForm.confirm_new_password) {
       setPasswordError('Passwords do not match.')
@@ -116,25 +119,34 @@ export default function ProfilePage() {
 
     setPasswordSaving(true)
 
-    const { data, error, status } = await api.post<unknown>('/api/auth/password/change/', {
-      current_password: passwordForm.current_password,
-      new_password: passwordForm.new_password,
-    })
-
-    if (status >= 200 && status < 300) {
+    try {
+      const token = localStorage.getItem('access_token')
+      const res = await fetch('/api/auth/password/change/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          current_password: passwordForm.current_password,
+          new_password: passwordForm.new_password,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        if (json.current_password) setCurrentPasswordError(json.current_password[0])
+        if (json.new_password) setNewPasswordError(json.new_password[0])
+        if (json.error) setPasswordError(json.error)
+        return
+      }
       setPasswordForm({ current_password: '', new_password: '', confirm_new_password: '' })
       setPasswordSuccess(true)
       setTimeout(() => setPasswordSuccess(false), 4000)
-    } else {
-      // Try to extract structured API errors
-      if (!data && error) {
-        setPasswordError(error)
-      } else {
-        setPasswordError(error ?? 'Something went wrong.')
-      }
+    } catch {
+      setPasswordError('Something went wrong. Please try again.')
+    } finally {
+      setPasswordSaving(false)
     }
-
-    setPasswordSaving(false)
   }
 
   if (loading) {
@@ -261,6 +273,9 @@ export default function ProfilePage() {
               className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
               required
             />
+            {currentPasswordError && (
+              <p className="mt-1 text-xs text-red-600">{currentPasswordError}</p>
+            )}
           </div>
 
           <div>
@@ -274,6 +289,9 @@ export default function ProfilePage() {
               className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
               required
             />
+            {newPasswordError && (
+              <p className="mt-1 text-xs text-red-600">{newPasswordError}</p>
+            )}
           </div>
 
           <div>

@@ -83,6 +83,8 @@ export interface User {
   hospital_name: string | null
   is_active: boolean
   is_verified: boolean
+  created_at: string
+  updated_at: string
 }
 
 export type PaginatedResponse<T> = {
