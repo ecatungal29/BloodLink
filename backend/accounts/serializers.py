@@ -17,6 +17,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'role', 'hospital', 'password', 'password_confirm',
         ]
 
+    def validate_role(self, value):
+        allowed = ('staff', 'viewer')
+        if value not in allowed:
+            raise serializers.ValidationError(
+                f"Self-registration is not permitted for role '{value}'."
+            )
+        return value
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match.")
