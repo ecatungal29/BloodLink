@@ -66,7 +66,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(UserSerializer):
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ['password']
@@ -77,19 +77,14 @@ class UserCreateSerializer(UserSerializer):
         return attrs
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
         email = validated_data['email']
         base = email.split('@')[0]
-        username = base
-        counter = 1
+        username, counter = base, 1
         while User.objects.filter(username=username).exists():
             username = f'{base}{counter}'
             counter += 1
-        user = User(**validated_data)
-        user.username = username
-        user.set_password(password)
-        user.save()
-        return user
+        validated_data['username'] = username
+        return User.objects.create_user(**validated_data)
 
 
 class LoginSerializer(serializers.Serializer):

@@ -203,11 +203,11 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         if user.role == 'hospital_admin':
-            serializer.validated_data['hospital'] = user.hospital
+            serializer.save(hospital=user.hospital)
         else:
             if not serializer.validated_data.get('hospital'):
                 raise DRFValidationError({'hospital': 'Hospital is required.'})
-        serializer.save()
+            serializer.save()
 
 
 def _unique_username(email):
