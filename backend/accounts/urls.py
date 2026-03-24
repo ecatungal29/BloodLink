@@ -13,4 +13,5 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('refresh/', views.RefreshTokenView.as_view(), name='token_refresh'),
     path('google/', views.GoogleLoginView.as_view(), name='google_login'),
+    path('password/change/', views.PasswordChangeView.as_view(), name='password-change'),
 ]
