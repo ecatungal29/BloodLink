@@ -72,6 +72,7 @@ frontend/review_*
 frontend/cur_*
 frontend/final_*.png
 frontend/blood-type-animation.png
+/*.png
 
 .claude/
 CLAUDE.md

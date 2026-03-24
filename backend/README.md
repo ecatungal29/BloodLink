@@ -347,8 +347,9 @@ class Donation(models.Model):
 
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   source venv/Scripts/activate
+   source venv/bin/activate        # macOS/Linux
+   source venv/Scripts/activate    # Windows (Git Bash)
+   # venv\Scripts\activate         # Windows (Command Prompt / PowerShell)
 
    ```
 
