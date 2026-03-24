@@ -77,10 +77,11 @@ export interface User {
   email: string
   first_name: string
   last_name: string
-  phone_number?: string
+  phone_number: string
   role: 'super_admin' | 'hospital_admin' | 'staff' | 'viewer'
-  hospital?: number
-  hospital_name?: string
+  hospital: number | null
+  hospital_name: string | null
+  is_active: boolean
   is_verified: boolean
 }
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Droplet, LayoutDashboard, Droplets, Search, ClipboardList, LogOut, User, ShieldCheck } from 'lucide-react'
+import { Droplet, LayoutDashboard, Droplets, Search, ClipboardList, LogOut, User, Users } from 'lucide-react'
 
 interface PortalSidebarProps {
   user: { first_name?: string; last_name?: string; email?: string; role?: string } | null
@@ -27,6 +27,9 @@ export default function PortalSidebar({ user, onLogout }: PortalSidebarProps) {
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || 'Staff User'
     : 'Staff User'
+
+  const userRole = user?.role as string | undefined
+  const isAdmin = userRole === 'hospital_admin' || userRole === 'super_admin'
 
   return (
     <aside className="w-64 flex-shrink-0 h-screen flex flex-col bg-white border-r border-slate-100">
@@ -55,14 +58,36 @@ export default function PortalSidebar({ user, onLogout }: PortalSidebarProps) {
           </Link>
         ))}
 
-        {/* Admin section — stub */}
-        <div className="pt-4 pb-1">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-300 mb-1">Admin</p>
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 opacity-50 cursor-not-allowed select-none">
-            <ShieldCheck style={{ width: '18px', height: '18px' }} className="flex-shrink-0" />
-            User Management
+        {/* Users nav item — admin only */}
+        {isAdmin && (
+          <div className="pt-4 pb-1">
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-300 mb-1">Admin</p>
+            <Link
+              href="/dashboard/users"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                isActive('/dashboard/users')
+                  ? 'bg-red-50 text-red-600 border-r-2 border-red-600'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              <Users style={{ width: '18px', height: '18px' }} className="flex-shrink-0" />
+              Users
+            </Link>
           </div>
-        </div>
+        )}
+
+        {/* My Profile nav item — all users */}
+        <Link
+          href="/dashboard/profile"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            isActive('/dashboard/profile')
+              ? 'bg-red-50 text-red-600 border-r-2 border-red-600'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+          }`}
+        >
+          <User style={{ width: '18px', height: '18px' }} className="flex-shrink-0" />
+          My Profile
+        </Link>
       </nav>
 
       {/* User + Logout */}
