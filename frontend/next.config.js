@@ -51,6 +51,22 @@ const nextConfig = {
 				destination: `${API_URL}/api/donations/hospitals/`,
 			},
 			{
+				source: "/api/auth/users",
+				destination: `${API_URL}/api/auth/users/`,
+			},
+			{
+				source: "/api/auth/users/",
+				destination: `${API_URL}/api/auth/users/`,
+			},
+			{
+				source: "/api/donations/inventory",
+				destination: `${API_URL}/api/donations/inventory/`,
+			},
+			{
+				source: "/api/donations/inventory/",
+				destination: `${API_URL}/api/donations/inventory/`,
+			},
+			{
 				source: "/api/:path*",
 				destination: `${API_URL}/api/:path*`,
 			},
