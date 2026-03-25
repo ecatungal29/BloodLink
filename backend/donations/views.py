@@ -314,6 +314,10 @@ class SearchHospitalsView(APIView):
             .exclude(availability_status='none')
         )
 
+        # Exclude the requester's own hospital so hospitals don't see themselves
+        if request.user.hospital_id:
+            inventory_qs = inventory_qs.exclude(hospital_id=request.user.hospital_id)
+
         # Build a map of hospital_id → inventory record for the serializer
         matched_inventory = {inv.hospital_id: inv for inv in inventory_qs}
         hospitals = list(Hospital.objects.filter(id__in=matched_inventory.keys()))

@@ -132,26 +132,39 @@ USERS = [
 ]
 
 # units_available per (component, abo, rh) — realistic spread
+# Negative blood types are rarer in the Philippine population (~5-8% Rh-negative)
+# so they intentionally carry lower baseline units than their positive counterparts.
 INVENTORY_TEMPLATE = [
-    # RBC — most critical
-    ("RBC", "O", "-", 2),
-    ("RBC", "O", "+", 18),
-    ("RBC", "A", "-", 4),
-    ("RBC", "A", "+", 22),
-    ("RBC", "B", "-", 3),
-    ("RBC", "B", "+", 15),
-    ("RBC", "AB", "-", 1),
-    ("RBC", "AB", "+", 9),
-    # Platelets
-    ("Platelets", "O", "+", 12),
-    ("Platelets", "A", "+", 8),
-    ("Platelets", "B", "+", 5),
-    ("Platelets", "AB", "+", 2),
-    # Plasma
-    ("Plasma", "O", "+", 20),
-    ("Plasma", "A", "+", 14),
-    ("Plasma", "B", "+", 10),
-    ("Plasma", "AB", "+", 6),
+    # RBC — most critical component, all 8 blood types
+    ("RBC", "O",  "-",  2),   # Universal donor — critical, always low
+    ("RBC", "O",  "+", 18),   # Most common Filipino blood type
+    ("RBC", "A",  "-",  4),
+    ("RBC", "A",  "+", 22),
+    ("RBC", "B",  "-",  3),
+    ("RBC", "B",  "+", 15),
+    ("RBC", "AB", "-",  1),   # Rarest — chronic shortage
+    ("RBC", "AB", "+",  9),
+    # Platelets — all 8 blood types
+    # Platelets have a 5-7 day shelf life so units are naturally lower
+    ("Platelets", "O",  "-",  2),
+    ("Platelets", "O",  "+", 12),
+    ("Platelets", "A",  "-",  3),
+    ("Platelets", "A",  "+",  8),
+    ("Platelets", "B",  "-",  1),
+    ("Platelets", "B",  "+",  5),
+    ("Platelets", "AB", "-",  0),
+    ("Platelets", "AB", "+",  2),
+    # Plasma — all 8 blood types
+    # Plasma is ABO-compatible in reverse (AB plasma is universal donor)
+    # and can be frozen, so units tend to be higher
+    ("Plasma", "O",  "-",  8),
+    ("Plasma", "O",  "+", 20),
+    ("Plasma", "A",  "-",  6),
+    ("Plasma", "A",  "+", 14),
+    ("Plasma", "B",  "-",  4),
+    ("Plasma", "B",  "+", 10),
+    ("Plasma", "AB", "-",  3),
+    ("Plasma", "AB", "+",  6),
 ]
 
 BLOOD_REQUESTS = [
