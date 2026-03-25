@@ -54,25 +54,29 @@ export default function ProfilePage() {
 		fetchProfile();
 	}, []);
 
-	const fetchProfile = async () => {
+	const fetchProfile = async (): Promise<void> => {
+		setLoading(true);
+		setFetchError(null);
+
 		try {
 			const { data, error } = await api.get<User>("/api/auth/profile/me/");
-			if (data) {
-				console.log("Profile data:", data);
-				setProfile(data);
-				setFetchError(null);
-				setPersonalForm({
-					first_name: data.first_name,
-					last_name: data.last_name,
-					phone_number: data.phone_number,
-				});
-			} else {
-				setFetchError(
-					error ?? "Failed to load profile. Please refresh the page.",
-				);
+
+			if (!data) {
+				setFetchError(error ?? "Failed to load profile. Please refresh the page.");
+				return;
 			}
-		} catch {
-			setFetchError("Failed to load profile. Please refresh the page.");
+
+			setProfile(data);
+			setPersonalForm({
+				// Backend may allow blank strings; keep inputs controlled regardless.
+				first_name: data.first_name ?? "",
+				last_name: data.last_name ?? "",
+				phone_number: data.phone_number ?? "",
+			});
+		} catch (err: unknown) {
+			const message: string =
+				err instanceof Error ? err.message : "Failed to load profile. Please refresh the page.";
+			setFetchError(message);
 		} finally {
 			setLoading(false);
 		}
