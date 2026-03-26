@@ -37,7 +37,7 @@ function RoutingLayer({
     // L.Routing is added to L by the side-effect import above.
     // Cast to any because the declare module shim types it as unknown.
     const control = (L as any).Routing.control({
-      waypoints: [L.latLng(origin[0], origin[1]), L.latLng(destination[0], destination[1])],
+      waypoints: [L.latLng(Number(origin[0]), Number(origin[1])), L.latLng(Number(destination[0]), Number(destination[1]))],
       routeWhileDragging: false,
       show: false,        // hide the text turn-by-turn panel
       addWaypoints: false, // prevent drag-to-add-waypoint
@@ -75,9 +75,13 @@ export default function DirectionMap({
   onRouteFound,
   onRouteError,
 }: DirectionMapProps) {
-  // Center the map between origin and destination
-  const centerLat = (origin[0] + destination[0]) / 2;
-  const centerLng = (origin[1] + destination[1]) / 2;
+  // Parse to numbers — Django DecimalField serializes as strings in JSON
+  const lat0 = Number(origin[0]);
+  const lng0 = Number(origin[1]);
+  const lat1 = Number(destination[0]);
+  const lng1 = Number(destination[1]);
+  const centerLat = (lat0 + lat1) / 2;
+  const centerLng = (lng0 + lng1) / 2;
 
   return (
     <MapContainer

@@ -29,7 +29,7 @@ export function useOriginLocation(): OriginLocation {
             `/api/donations/hospitals/${user.hospital}/`
           );
           if (!cancelled && data?.latitude != null && data?.longitude != null) {
-            setCoords([data.latitude, data.longitude]);
+            setCoords([Number(data.latitude), Number(data.longitude)]);
             setHospitalName(data.name);
             setLoading(false);
             return;

@@ -41,7 +41,7 @@ export default function DirectionModal({
 
   const destination: [number, number] | null =
     hospital.latitude != null && hospital.longitude != null
-      ? [hospital.latitude, hospital.longitude]
+      ? [Number(hospital.latitude), Number(hospital.longitude)]
       : null;
 
   const handleRouteFound = (distanceM: number, durationS: number) => {
