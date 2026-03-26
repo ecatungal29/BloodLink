@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, Phone, Clock, MapPin, AlertTriangle } from "lucide-react";
 import { api } from "@/api/client";
 import type { HospitalSearchResult, BloodRequest } from "@/types";
+import DirectionModal from "@/components/DirectionModal";
 
 const AVAILABILITY_BADGE: Record<string, string> = {
 	adequate: "bg-green-100 text-green-700",
@@ -34,6 +35,8 @@ export default function SearchPage() {
 	const [results, setResults] = useState<HospitalSearchResult[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [searched, setSearched] = useState(false);
+	const [selectedHospital, setSelectedHospital] =
+		useState<HospitalSearchResult | null>(null);
 	const [inquiryTarget, setInquiryTarget] =
 		useState<HospitalSearchResult | null>(null);
 	const [inquiryForm, setInquiryForm] = useState(defaultInquiryForm);
@@ -244,11 +247,21 @@ export default function SearchPage() {
 											)}
 										</div>
 									</div>
-									<button
-										onClick={() => openInquiry(hospital)}
-										className="flex-shrink-0 px-4 py-2 text-xs font-semibold text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 transition-colors">
-										Send Inquiry
-									</button>
+									<div className="flex-shrink-0 flex flex-col gap-2">
+										<button
+											onClick={() => openInquiry(hospital)}
+											className="px-4 py-2 text-xs font-semibold text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 transition-colors">
+											Send Inquiry
+										</button>
+										{hospital.latitude != null && hospital.longitude != null && (
+											<button
+												onClick={() => setSelectedHospital(hospital)}
+												className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors flex items-center justify-center gap-1.5">
+												<MapPin className="w-3 h-3" />
+												Show Direction
+											</button>
+										)}
+									</div>
 								</div>
 							);
 						})
@@ -382,6 +395,14 @@ export default function SearchPage() {
 						}
 					</div>
 				</div>
+			)}
+
+			{/* Direction Modal */}
+			{selectedHospital && (
+				<DirectionModal
+					hospital={selectedHospital}
+					onClose={() => setSelectedHospital(null)}
+				/>
 			)}
 		</div>
 	);
