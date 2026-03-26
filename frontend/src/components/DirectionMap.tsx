@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet-routing-machine"; // side-effect: registers L.Routing on the Leaflet namespace
 
@@ -16,28 +15,49 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-interface RoutingLayerProps {
+interface DirectionMapProps {
   origin: [number, number];
   destination: [number, number];
   onRouteFound: (distanceM: number, durationS: number) => void;
   onRouteError: () => void;
 }
 
-// Inner component: uses useMap() to access the Leaflet map instance.
-// Must be rendered as a child of <MapContainer>.
-function RoutingLayer({
+export default function DirectionMap({
   origin,
   destination,
   onRouteFound,
   onRouteError,
-}: RoutingLayerProps) {
-  const map = useMap();
+}: DirectionMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // L.Routing is added to L by the side-effect import above.
-    // Cast to any because the declare module shim types it as unknown.
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+
+    // React 18 StrictMode mounts → unmounts → remounts in dev.
+    // Leaflet leaves _leaflet_id on the DOM node after map.remove(), so the
+    // second mount throws "Map container is already initialized".
+    // Clearing it before init prevents the error without affecting production.
+    if ((container as any)._leaflet_id) {
+      (container as any)._leaflet_id = undefined;
+    }
+
+    // Parse to numbers — Django DecimalField serializes as strings in JSON
+    const lat0 = Number(origin[0]);
+    const lng0 = Number(origin[1]);
+    const lat1 = Number(destination[0]);
+    const lng1 = Number(destination[1]);
+
+    const map = L.map(container).setView([(lat0 + lat1) / 2, (lng0 + lng1) / 2], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
     const control = (L as any).Routing.control({
-      waypoints: [L.latLng(Number(origin[0]), Number(origin[1])), L.latLng(Number(destination[0]), Number(destination[1]))],
+      waypoints: [L.latLng(lat0, lng0), L.latLng(lat1, lng1)],
       routeWhileDragging: false,
       show: false,        // hide the text turn-by-turn panel
       addWaypoints: false, // prevent drag-to-add-waypoint
@@ -53,53 +73,11 @@ function RoutingLayer({
     });
 
     return () => {
-      map.removeControl(control);
+      map.remove();
     };
-    // Deps are primitives/stable callbacks — safe to run once on mount
+    // Coordinates are stable for the lifetime of this modal instance
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return null;
-}
-
-interface DirectionMapProps {
-  origin: [number, number];
-  destination: [number, number];
-  onRouteFound: (distanceM: number, durationS: number) => void;
-  onRouteError: () => void;
-}
-
-export default function DirectionMap({
-  origin,
-  destination,
-  onRouteFound,
-  onRouteError,
-}: DirectionMapProps) {
-  // Parse to numbers — Django DecimalField serializes as strings in JSON
-  const lat0 = Number(origin[0]);
-  const lng0 = Number(origin[1]);
-  const lat1 = Number(destination[0]);
-  const lng1 = Number(destination[1]);
-  const centerLat = (lat0 + lat1) / 2;
-  const centerLng = (lng0 + lng1) / 2;
-
-  return (
-    <MapContainer
-      center={[centerLat, centerLng]}
-      zoom={13}
-      className="h-full w-full"
-      zoomControl={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <RoutingLayer
-        origin={origin}
-        destination={destination}
-        onRouteFound={onRouteFound}
-        onRouteError={onRouteError}
-      />
-    </MapContainer>
-  );
+  return <div ref={containerRef} className="h-full w-full" />;
 }
