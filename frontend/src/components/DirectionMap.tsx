@@ -64,11 +64,16 @@ export default function DirectionMap({
       collapsible: false,
     }).addTo(map);
 
-    // LRM re-shows the itinerary panel after routesfound — hide it explicitly
-    control.hide();
+    // Hide the itinerary panel — LRM ignores show:false after routesfound,
+    // so we target the container element directly via DOM.
+    const hideItinerary = () => {
+      const el = control.getContainer?.() as HTMLElement | undefined;
+      if (el) el.style.display = "none";
+    };
+    hideItinerary();
 
     control.on("routesfound", (e: any) => {
-      control.hide();
+      hideItinerary();
       const route = e.routes[0];
       onRouteFound(route.summary.totalDistance, route.summary.totalTime);
     });
