@@ -26,7 +26,6 @@ export default function DirectionModal({
   const { coords: originCoords, hospitalName: originName, loading: originLoading, error: originError } =
     useOriginLocation();
 
-  const [routeLoading, setRouteLoading] = useState(true);
   const [routeError, setRouteError] = useState(false);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [durationMin, setDurationMin] = useState<number | null>(null);
@@ -48,12 +47,10 @@ export default function DirectionModal({
   const handleRouteFound = (distanceM: number, durationS: number) => {
     setDistanceKm(Math.round((distanceM / 1000) * 10) / 10);
     setDurationMin(Math.round(durationS / 60));
-    setRouteLoading(false);
   };
 
   const handleRouteError = () => {
     setRouteError(true);
-    setRouteLoading(false);
   };
 
   const googleMapsUrl =
@@ -63,7 +60,8 @@ export default function DirectionModal({
         ? `https://www.google.com/maps/search/?api=1&query=${destination[0]},${destination[1]}`
         : null;
 
-  const isLoading = originLoading || (originCoords != null && destination != null && routeLoading);
+  // Route is loading when origin + destination are ready but no result/error yet
+  const routeLoading = !originLoading && originCoords != null && destination != null && distanceKm === null && !routeError;
   const hasError = originError || routeError || !destination;
 
   return (
