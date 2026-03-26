@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "@/api/client";
-import type { User, Hospital } from "@/types";
+import type { User } from "@/types";
 
 interface OriginLocation {
   coords: [number, number] | null;
@@ -16,46 +15,17 @@ export function useOriginLocation(): OriginLocation {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const raw = localStorage.getItem("user");
+    const user: User | null = raw ? JSON.parse(raw) : null;
 
-    async function resolve() {
-      const raw = localStorage.getItem("user");
-      const user: User | null = raw ? JSON.parse(raw) : null;
-
-      if (!user?.hospital) {
-        if (!cancelled) {
-          setError("Your account is not linked to a hospital.");
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const { data } = await api.get<Hospital>(
-          `/api/donations/hospitals/${user.hospital}/`
-        );
-
-        if (cancelled) return;
-
-        if (data?.latitude != null && data?.longitude != null) {
-          setCoords([Number(data.latitude), Number(data.longitude)]);
-          setHospitalName(data.name);
-        } else {
-          setError("Your hospital does not have coordinates set up yet.");
-        }
-      } catch {
-        if (!cancelled) {
-          setError("Could not load your hospital location.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (user?.latitude != null && user?.longitude != null) {
+      setCoords([Number(user.latitude), Number(user.longitude)]);
+      setHospitalName(user.hospital_name);
+    } else {
+      setError("Your hospital does not have coordinates set up yet.");
     }
 
-    resolve();
-    return () => {
-      cancelled = true;
-    };
+    setLoading(false);
   }, []);
 
   return { coords, hospitalName, loading, error };

@@ -81,6 +81,8 @@ export interface User {
   role: 'super_admin' | 'hospital_admin' | 'staff' | 'viewer'
   hospital: number | null
   hospital_name: string | null
+  latitude: string | null
+  longitude: string | null
   is_active: boolean
   is_verified: boolean
   created_at: string
