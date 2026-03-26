@@ -45,18 +45,26 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     hospital_name = serializers.SerializerMethodField()
+    latitude = serializers.SerializerMethodField()
+    longitude = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'phone_number',
-            'role', 'hospital', 'hospital_name', 'is_verified',
-            'created_at', 'updated_at',
+            'role', 'hospital', 'hospital_name', 'latitude', 'longitude',
+            'is_verified', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at']
 
     def get_hospital_name(self, obj):
         return obj.hospital.name if obj.hospital else None
+
+    def get_latitude(self, obj):
+        return str(obj.hospital.latitude) if obj.hospital and obj.hospital.latitude is not None else None
+
+    def get_longitude(self, obj):
+        return str(obj.hospital.longitude) if obj.hospital and obj.hospital.longitude is not None else None
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
