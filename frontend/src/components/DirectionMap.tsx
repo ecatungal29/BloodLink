@@ -59,11 +59,16 @@ export default function DirectionMap({
     const control = (L as any).Routing.control({
       waypoints: [L.latLng(lat0, lng0), L.latLng(lat1, lng1)],
       routeWhileDragging: false,
-      show: false,        // hide the text turn-by-turn panel
-      addWaypoints: false, // prevent drag-to-add-waypoint
+      show: false,
+      addWaypoints: false,
+      collapsible: false,
     }).addTo(map);
 
+    // LRM re-shows the itinerary panel after routesfound — hide it explicitly
+    control.hide();
+
     control.on("routesfound", (e: any) => {
+      control.hide();
       const route = e.routes[0];
       onRouteFound(route.summary.totalDistance, route.summary.totalTime);
     });
