@@ -19,50 +19,37 @@ export function useOriginLocation(): OriginLocation {
     let cancelled = false;
 
     async function resolve() {
-      // Step 1: Try the user's stored hospital record
-      try {
-        const raw = localStorage.getItem("user");
-        const user: User | null = raw ? JSON.parse(raw) : null;
+      const raw = localStorage.getItem("user");
+      const user: User | null = raw ? JSON.parse(raw) : null;
 
-        if (user?.hospital) {
-          const { data } = await api.get<Hospital>(
-            `/api/donations/hospitals/${user.hospital}/`
-          );
-          if (!cancelled && data?.latitude != null && data?.longitude != null) {
-            setCoords([Number(data.latitude), Number(data.longitude)]);
-            setHospitalName(data.name);
-            setLoading(false);
-            return;
-          }
+      if (!user?.hospital) {
+        if (!cancelled) {
+          setError("Your account is not linked to a hospital.");
+          setLoading(false);
         }
-      } catch {
-        // fall through to GPS
-      }
-
-      if (cancelled) return;
-
-      // Step 2: Fall back to browser GPS
-      if (!navigator.geolocation) {
-        setError("Could not determine your location.");
-        setLoading(false);
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (!cancelled) {
-            setCoords([position.coords.latitude, position.coords.longitude]);
-            setHospitalName("Your Location");
-            setLoading(false);
-          }
-        },
-        () => {
-          if (!cancelled) {
-            setError("Could not determine your location.");
-            setLoading(false);
-          }
+      try {
+        const { data } = await api.get<Hospital>(
+          `/api/donations/hospitals/${user.hospital}/`
+        );
+
+        if (cancelled) return;
+
+        if (data?.latitude != null && data?.longitude != null) {
+          setCoords([Number(data.latitude), Number(data.longitude)]);
+          setHospitalName(data.name);
+        } else {
+          setError("Your hospital does not have coordinates set up yet.");
         }
-      );
+      } catch {
+        if (!cancelled) {
+          setError("Could not load your hospital location.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     resolve();
