@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ClipboardList, AlertTriangle, Building2, Clock } from 'lucide-react'
 import { api } from '@/api/client'
-import type { BloodRequest, InventoryItem, PaginatedResponse, Hospital } from '@/types'
+import type { BloodRequest, InventoryItem, PaginatedResponse, Hospital, RequestResponse, User } from '@/types'
 
 interface Stats {
   open_requests: number
@@ -41,6 +41,8 @@ export default function DashboardPage() {
   })
   const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([])
   const [inventoryAlerts, setInventoryAlerts] = useState<InventoryItem[]>([])
+  const [incomingRequests, setIncomingRequests] = useState<BloodRequest[]>([])
+  const [respondingId, setRespondingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,19 +50,40 @@ export default function DashboardPage() {
   }, [])
 
   const fetchDashboardData = async () => {
+    const storedUser = localStorage.getItem('user')
+    const currentUser: User | null = storedUser ? JSON.parse(storedUser) : null
+    const myHospitalId = currentUser?.hospital ?? null
+
     try {
-      const [requestsRes, inventoryRes, hospitalsRes] = await Promise.allSettled([
+      const [requestsRes, inventoryRes, hospitalsRes, responsesRes] = await Promise.allSettled([
         api.get<PaginatedResponse<BloodRequest> | BloodRequest[]>('/api/donations/requests/'),
         api.get<PaginatedResponse<InventoryItem> | InventoryItem[]>('/api/donations/inventory/'),
         api.get<PaginatedResponse<Hospital> | Hospital[]>('/api/donations/hospitals/'),
+        api.get<PaginatedResponse<RequestResponse> | RequestResponse[]>('/api/donations/responses/'),
       ])
+
+      let respondedRequestIds = new Set<number>()
+      if (responsesRes.status === 'fulfilled' && responsesRes.value.data) {
+        const raw = responsesRes.value.data
+        const responses: RequestResponse[] = Array.isArray(raw) ? raw : raw.results
+        respondedRequestIds = new Set(responses.map((r) => r.request))
+      }
 
       if (requestsRes.status === 'fulfilled' && requestsRes.value.data) {
         const raw = requestsRes.value.data
         const requests: BloodRequest[] = Array.isArray(raw) ? raw : raw.results
         setRecentRequests(requests.slice(0, 5))
         const open = requests.filter((r) => r.status === 'open').length
-        setStats((prev) => ({ ...prev, open_requests: open, pending_responses: open }))
+
+        const incoming = requests.filter(
+          (r) =>
+            r.status === 'open' &&
+            myHospitalId !== null &&
+            r.requesting_hospital !== myHospitalId &&
+            !respondedRequestIds.has(r.id)
+        )
+        setIncomingRequests(incoming)
+        setStats((prev) => ({ ...prev, open_requests: open, pending_responses: incoming.length }))
       }
 
       if (inventoryRes.status === 'fulfilled' && inventoryRes.value.data) {
@@ -83,6 +106,19 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const respond = async (requestId: number, responseStatus: RequestResponse['response_status']) => {
+    setRespondingId(requestId)
+    const { error } = await api.post('/api/donations/responses/', {
+      request: requestId,
+      response_status: responseStatus,
+    })
+    if (!error) {
+      setIncomingRequests((prev) => prev.filter((r) => r.id !== requestId))
+      setStats((prev) => ({ ...prev, pending_responses: Math.max(0, prev.pending_responses - 1) }))
+    }
+    setRespondingId(null)
   }
 
   const statCards = [
@@ -119,6 +155,70 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Needs Your Response */}
+      {incomingRequests.length > 0 && (
+        <div className="bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-rose-100 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <h2 className="text-sm font-semibold text-slate-800">Needs Your Response</h2>
+            <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-bold">
+              {incomingRequests.length}
+            </span>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {incomingRequests.slice(0, 5).map((req) => {
+              const isResponding = respondingId === req.id
+              return (
+                <div key={req.id} className="px-5 py-3.5 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {req.component_type} {req.blood_label} &middot; {req.units_needed}u
+                      </span>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${URGENCY_BADGE[req.urgency_level?.toLowerCase()] || 'bg-slate-100 text-slate-600'}`}>
+                        {req.urgency_level}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate">
+                      From: {req.requesting_hospital_name} &middot;{' '}
+                      {new Date(req.created_at).toLocaleDateString(undefined, { dateStyle: 'short' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      disabled={isResponding}
+                      onClick={() => respond(req.id, 'available')}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Available
+                    </button>
+                    <button
+                      disabled={isResponding}
+                      onClick={() => respond(req.id, 'limited')}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Limited
+                    </button>
+                    <button
+                      disabled={isResponding}
+                      onClick={() => respond(req.id, 'not_available')}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {incomingRequests.length > 5 && (
+              <div className="px-5 py-3 text-xs text-slate-400 text-center">
+                + {incomingRequests.length - 5} more incoming requests
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Recent Blood Requests */}
