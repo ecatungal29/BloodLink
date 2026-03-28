@@ -83,6 +83,14 @@ const nextConfig = {
 				destination: `${API_URL}/api/donations/search/`,
 			},
 			{
+				source: "/api/donations/responses",
+				destination: `${API_URL}/api/donations/responses/`,
+			},
+			{
+				source: "/api/donations/responses/",
+				destination: `${API_URL}/api/donations/responses/`,
+			},
+			{
 				source: "/api/:path*",
 				destination: `${API_URL}/api/:path*`,
 			},
