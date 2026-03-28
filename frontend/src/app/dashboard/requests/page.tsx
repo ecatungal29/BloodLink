@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, X } from 'lucide-react'
 import { api } from '@/api/client'
-import type { BloodRequest, PaginatedResponse } from '@/types'
+import type { BloodRequest, PaginatedResponse, RequestResponse, User } from '@/types'
 
 type StatusFilter = 'all' | 'open' | 'fulfilled' | 'closed'
 
@@ -48,13 +48,37 @@ export default function RequestsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Respond flow
+  const [myHospitalId, setMyHospitalId] = useState<number | null>(null)
+  const [respondedIds, setRespondedIds] = useState<Set<number>>(new Set())
+  const [respondTarget, setRespondTarget] = useState<BloodRequest | null>(null)
+  const [respondMessage, setRespondMessage] = useState('')
+  const [respondSubmitting, setRespondSubmitting] = useState(false)
+  const [respondError, setRespondError] = useState('')
+
   const fetchRequests = useCallback(async () => {
     setLoading(true)
+
+    const storedUser = localStorage.getItem('user')
+    const currentUser: User | null = storedUser ? JSON.parse(storedUser) : null
+    setMyHospitalId(currentUser?.hospital ?? null)
+
     try {
-      const { data } = await api.get<PaginatedResponse<BloodRequest> | BloodRequest[]>(
-        '/api/donations/requests/'
-      )
-      if (data) setRequests(Array.isArray(data) ? data : data.results)
+      const [requestsRes, responsesRes] = await Promise.allSettled([
+        api.get<PaginatedResponse<BloodRequest> | BloodRequest[]>('/api/donations/requests/'),
+        api.get<PaginatedResponse<RequestResponse> | RequestResponse[]>('/api/donations/responses/'),
+      ])
+
+      if (responsesRes.status === 'fulfilled' && responsesRes.value.data) {
+        const raw = responsesRes.value.data
+        const responses: RequestResponse[] = Array.isArray(raw) ? raw : raw.results
+        setRespondedIds(new Set(responses.map((r) => r.request)))
+      }
+
+      if (requestsRes.status === 'fulfilled' && requestsRes.value.data) {
+        const raw = requestsRes.value.data
+        setRequests(Array.isArray(raw) ? raw : raw.results)
+      }
     } catch (err) {
       console.error('Requests fetch error:', err)
     } finally {
@@ -65,6 +89,15 @@ export default function RequestsPage() {
   useEffect(() => {
     fetchRequests()
   }, [fetchRequests])
+
+  // Close respond modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setRespondTarget(null)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const filtered =
     statusFilter === 'all'
@@ -90,6 +123,36 @@ export default function RequestsPage() {
     }
     setSubmitting(false)
   }
+
+  const submitResponse = async (requestId: number, status: RequestResponse['response_status']) => {
+    setRespondSubmitting(true)
+    setRespondError('')
+    const { error } = await api.post('/api/donations/responses/', {
+      request: requestId,
+      response_status: status,
+      ...(respondMessage.trim() ? { message: respondMessage.trim() } : {}),
+    })
+    if (error) {
+      setRespondError(error)
+    } else {
+      setRespondedIds((prev) => { const next = new Set(prev); next.add(requestId); return next })
+      setRespondTarget(null)
+      setRespondMessage('')
+    }
+    setRespondSubmitting(false)
+  }
+
+  const isRespondable = (req: BloodRequest) =>
+    req.status === 'open' &&
+    myHospitalId !== null &&
+    req.requesting_hospital !== myHospitalId &&
+    !respondedIds.has(req.id)
+
+  const isAlreadyResponded = (req: BloodRequest) =>
+    req.status === 'open' &&
+    myHospitalId !== null &&
+    req.requesting_hospital !== myHospitalId &&
+    respondedIds.has(req.id)
 
   const SelectField = ({
     label,
@@ -160,7 +223,7 @@ export default function RequestsPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-slate-100 bg-slate-50">
               <tr>
-                {['Component', 'ABO', 'Rh', 'Units', 'Urgency', 'Status', 'Hospital', 'Created'].map(
+                {['Component', 'ABO', 'Rh', 'Units', 'Urgency', 'Status', 'Hospital', 'Created', 'Actions'].map(
                   (col) => (
                     <th key={col} className="text-left text-xs font-semibold text-slate-400 px-5 py-3 first:pl-5">
                       {col}
@@ -194,6 +257,20 @@ export default function RequestsPage() {
                     </td>
                     <td className="px-5 py-3.5 text-slate-500 text-xs">{req.requesting_hospital_name || '—'}</td>
                     <td className="px-5 py-3.5 text-slate-500 text-xs">{createdAt}</td>
+                    <td className="px-5 py-3.5">
+                      {isRespondable(req) ? (
+                        <button
+                          onClick={() => setRespondTarget(req)}
+                          className="px-3 py-1.5 text-[11px] font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors"
+                        >
+                          Respond
+                        </button>
+                      ) : isAlreadyResponded(req) ? (
+                        <span className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-400">
+                          Responded
+                        </span>
+                      ) : null}
+                    </td>
                   </tr>
                 )
               })}
@@ -268,6 +345,75 @@ export default function RequestsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Respond Modal */}
+      {respondTarget && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-slate-900">Respond to Request</h2>
+              <button
+                onClick={() => { setRespondTarget(null); setRespondMessage(''); setRespondError('') }}
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Request summary */}
+            <div className="mb-5 px-4 py-3 bg-slate-50 rounded-xl text-sm text-slate-600 space-y-1">
+              <p className="font-semibold text-slate-800">
+                {respondTarget.component_type} {respondTarget.blood_label}
+              </p>
+              <p>{respondTarget.units_needed} units needed · <span className="capitalize">{respondTarget.urgency_level}</span></p>
+              <p className="text-xs text-slate-500">From: {respondTarget.requesting_hospital_name}</p>
+            </div>
+
+            {respondError && (
+              <div className="mb-4 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl">
+                {respondError}
+              </div>
+            )}
+
+            <div className="mb-5">
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Message <span className="text-slate-400">(optional)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={respondMessage}
+                onChange={(e) => setRespondMessage(e.target.value)}
+                placeholder="Additional notes for the requesting hospital..."
+                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => submitResponse(respondTarget.id, 'available')}
+                disabled={respondSubmitting}
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Available
+              </button>
+              <button
+                onClick={() => submitResponse(respondTarget.id, 'limited')}
+                disabled={respondSubmitting}
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Limited
+              </button>
+              <button
+                onClick={() => submitResponse(respondTarget.id, 'not_available')}
+                disabled={respondSubmitting}
+                className="flex-1 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Not Available
+              </button>
+            </div>
           </div>
         </div>
       )}
