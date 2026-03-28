@@ -94,7 +94,7 @@ class RequestResponseSerializer(serializers.ModelSerializer):
             'response_status', 'message', 'responded_by', 'responded_by_name',
             'timestamp',
         ]
-        read_only_fields = ['id', 'responded_by', 'timestamp']
+        read_only_fields = ['id', 'responding_hospital', 'responded_by', 'timestamp']
 
     def get_responding_hospital_name(self, obj):
         return obj.responding_hospital.name
